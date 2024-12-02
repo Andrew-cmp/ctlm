@@ -2,15 +2,22 @@
 tlm_dataset_readonly/
 tlm_dataset/gen/dataset/
 tlm_dataset/gen/gen_dataset/
+tlm_dataset/gen/gen_data/
 tlm_dataset/meta/dataset/
 tlm_dataset/meta/meta_dataset/
 tlm_dataset/meta/measure_data/
 tlm_dataset/meta/measured/
+tlm_dataset/meta/meta_data/
+tlm_dataset/meta/tmp_folder/
+
 
 experiment/dataset/
 experiment/measure_data/
 experiment/exp_data/
+*.sqlite
+*.nsys-rep
 tlm_dataset.zip
+install/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

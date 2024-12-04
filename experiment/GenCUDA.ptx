@@ -19,7 +19,6 @@
 	.param .u64 main_kernel0_param_1,
 	.param .u64 main_kernel0_param_2
 )
-.maxnreg 50
 {
 	.local .align 16 .b8 	__local_depot0[8192];
 	.reg .b64 	%SP;

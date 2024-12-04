@@ -63,7 +63,7 @@ class Module:
 from tvm.contrib import nvcc
 @tvm.register_func("tvm_callback_cuda_compile", override=True)
 def tvm_callback_cuda_compile(code):
-    ptx = nvcc.compile_cuda(code, options=['-maxrregcount=255'])
+    ptx = nvcc.compile_cuda(code)
     print("this is override tvm_callback_cuda_compile")
     with open("test_shared_dyn.ptx",'wb')as f:
         f.write(ptx)

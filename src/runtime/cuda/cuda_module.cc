@@ -93,11 +93,11 @@ class CUDAModuleNode : public runtime::ModuleNode {
   }
 
   std::string GetSource(const std::string& format) final {
-    if (format == fmt_) return data_;
-    if (cuda_source_.length() != 0) {
+    if (format == fmt_) return data_.c_str();
+    if (cuda_source_.length() != 0&&fmt_ != "ptx") {
       return cuda_source_;
     } else {
-      if (fmt_ == "ptx") return data_;
+      if (fmt_ == "ptx") return data_.c_str();
       return "";
     }
   }

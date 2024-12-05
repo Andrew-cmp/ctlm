@@ -1,13 +1,13 @@
 import argparse
 import glob
 import os
-
+import tvm
 from tqdm import tqdm  # type: ignore
 from tvm import meta_schedule as ms
 from tvm.target import Target
 import logging
 import shutil
-
+#只针对单个task测量，并且将cuda代码保存到新的文件夹中
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -59,7 +59,14 @@ def _parse_args():
         help="The batch size of candidates sent to builder and runner each time.",
     )
     return parser.parse_args()
-
+# from tvm.contrib import nvcc
+# @tvm.register_func("tvm_callback_cuda_compile", override=True)
+# def tvm_callback_cuda_compile(code):
+#     ptx = nvcc.compile_cuda(code)
+#     print("this is override tvm_callback_cuda_compile")
+#     with open("test_shared_dyn.ptx",'wb')as f:
+#         f.write(ptx)
+#     return ptx
 
 # pylint: disable=too-many-locals
 def measure_candidates(database, builder, runner, task_record,new_dir):
@@ -97,12 +104,14 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
             runner_results.extend(batch_runner_results)
             for i, result in enumerate(task_record.builder_results):
                 if result.error_msg is None:
+                    #print(result.artifact_path)
                     artifact_dir = os.path.dirname(result.artifact_path)
                     src = os.path.join(artifact_dir,"cuda_code.cu")
                     dst_dir = os.path.join(new_dir,"cuda_code")
                     dst = os.path.join(dst_dir,f"{i+idx}.cu")
                     shutil.move(src,dst)
                     ms.utils.remove_build_dir(result.artifact_path)
+                    
                 else:
                     build_fail_indices.append(i + idx)
             task_record._clear_measure_state(batch_runner_results)  # pylint: disable=protected-access
@@ -144,41 +153,43 @@ args = _parse_args()  # pylint: disable=invalid-name
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    builder = ms.builder.LocalBuilder(timeout_sec=30)
-    runner = ms.runner.LocalRunner(timeout_sec=10)
+    
+
+    builder = ms.builder.LocalBuilder(timeout_sec=300)
+    runner = ms.runner.LocalRunner(timeout_sec=100)
+    model_name = args.candidate_cache_dir.split("/")[-1]
     if not os.path.isdir(args.candidate_cache_dir):
         raise Exception("Please provide a correct candidate cache dir.")
+    new_dir = os.path.join(args.result_cache_dir, model_name)
     try:
-        os.makedirs(args.result_cache_dir, exist_ok=True)
+        os.makedirs(new_dir, exist_ok=True)
     except OSError:
         print(f"Directory {args.result_cache_dir} cannot be created successfully.")
-    # 这行代码的作用是查找指定目录下的所有子目录或文件，并将其路径存储到 model_dirs 变量中。
-    model_dirs = glob.glob(os.path.join(args.candidate_cache_dir, "*"))
-
+    new_cuda_dir = os.path.join(new_dir, "cuda_code")
+    try:
+        os.makedirs(new_cuda_dir, exist_ok=True)
+    except OSError:
+        print(f"Directory {new_cuda_dir} cannot be created successfully.")
+    
+    new_ptx_dir = os.path.join(new_dir, "ptx_code")
+    try:
+        os.makedirs(new_ptx_dir, exist_ok=True)
+    except OSError:
+        print(f"Directory {new_ptx_dir} cannot be created successfully.")
+         
+        
     task_record = ms.task_scheduler.task_scheduler.TaskRecord(
         ms.TuneContext(target=Target(args.target)))
-    for model_dir in tqdm(model_dirs):
-        # such as '14729483509063283358__fused_nn_contrib_conv2d_winograd_without_weight_transform_add_add_nn_relu'
-        model_name = model_dir.split("/")[-1]
-        new_dir = os.path.join(args.result_cache_dir, model_name)
-        if os.path.isdir(new_dir):
-            recods_path = os.path.join(new_dir, 'database_tuning_record.json')
-            if os.path.exists(recods_path):
-                with open(recods_path, 'r') as f:
-                    lines = [line for line in f.read().strip().split('\n') if line]
-                    if len(lines) > 0:
-                        continue
-        else:
-            os.makedirs(new_dir)
-            os.makedirs(os.path.join(new_dir, "cuda_code"))
-        database = ms.database.JSONDatabase(work_dir=model_dir)
-        measure_candidates(database, builder, runner, task_record,new_dir)
+    
+    
+    
+    
+    
+    
+    database = ms.database.JSONDatabase(work_dir=args.candidate_cache_dir)
+    measure_candidates(database, builder, runner, task_record,new_dir)
 
 
 if __name__ == "__main__":
     main()
-# CUDA_VISIBLE_DEVICES=2 python measure_programs.py \
-# --batch_size=64 
-# --target=nvidia/nvidia-a100 \
-# --candidate_cache_dir= /home/hwhu/ctlm/ctlm/dataset/to_measure_programs/v100\
-# --result_cache_dir=/home/hwhu/ctlm/ctlm/dataset/measure_records/a100
+#python measure_program.py --result_cache_dir=dataset/tmp --candidate_cache_dir=dataset/to_measure_programs/a6000/450115668279416192__fused_nn_conv2d_add --target=nvidia/nvidia-a100

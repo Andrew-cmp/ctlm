@@ -28,7 +28,8 @@ from ...contrib.popen_pool import MapResult, PopenPoolExecutor, StatusKind
 from ..logging import get_logger
 from ..utils import cpu_count, derived_object, get_global_func_with_default_on_worker
 from .builder import BuilderInput, BuilderResult, PyBuilder
-
+import random
+import string
 logger = get_logger(__name__)  # pylint: disable=invalid-name
 
 
@@ -106,6 +107,7 @@ class LocalBuilder(PyBuilder):
     initializer: Optional[Callable[[], None]]
     f_build: Union[None, str, T_BUILD]
     f_export: Union[None, str, T_EXPORT]
+    build_save_path : str
 
     def __init__(
         self,
@@ -115,6 +117,7 @@ class LocalBuilder(PyBuilder):
         f_build: Union[None, str, T_BUILD] = None,
         f_export: Union[None, str, T_EXPORT] = None,
         initializer: Optional[Callable[[], None]] = None,
+        build_save_path : str = None
     ) -> None:
         """Constructor.
 
@@ -146,6 +149,7 @@ class LocalBuilder(PyBuilder):
         self.f_build = f_build
         self.f_export = f_export
         self._sanity_check()
+        self.build_save_path = build_save_path
 
     def build(self, build_inputs: List[BuilderInput]) -> List[BuilderResult]:
         results: List[BuilderResult] = []
@@ -276,7 +280,13 @@ def default_export(mod: Module) -> str:
         The path to the exported Module.
     """
     from tvm.contrib.tar import tar  # pylint: disable=import-outside-toplevel
-
-    artifact_path = os.path.join(tempfile.mkdtemp(), "tvm_tmp_mod." + tar.output_format)
+    artifact_base_dir="/home/hwhu/ctlm/experiment/measure_data/tmp"
+    artifact_path = os.path.join(tempfile.mkdtemp(dir=artifact_base_dir), "tvm_tmp_mod." + tar.output_format)
     mod.export_library(artifact_path, tar)
+    hold_path = os.path.dirname(artifact_path)
+    cuda_code_path = os.path.join(hold_path,"cuda_code.cu")
+    ptx_code_path = os.path.join(hold_path,"ptx_code.ptx")
+    
+    with open(cuda_code_path,"w") as f:
+        f.write(mod.imported_modules[0].get_source())
     return artifact_path

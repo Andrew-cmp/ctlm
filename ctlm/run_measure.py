@@ -5,7 +5,7 @@ import math
 import shutil
 
 
-n_part = 8
+n_part = 12
 
 
 def exec_cmd_if_error_send_mail(command):
@@ -121,6 +121,7 @@ os.makedirs('measure_data/measured', exist_ok=True)
 os.makedirs('measure_data/measured_part', exist_ok=True)
 os.makedirs('measure_data/measured_tmp', exist_ok=True)
 os.makedirs('measure_data/to_measure_bak', exist_ok=True)
+os.makedirs('measure_data/tmp', exist_ok=True)
 
 os.system(f'mv measure_data/to_measure_*/*_part_* measure_data/to_measure/')
 
@@ -128,7 +129,7 @@ try:
     # 注意，我们再measure_programs中指定了target=a6000，这里指定的target不会生效，只会和文件夹有关。
     
     # 下面的进程都会启动，并同时运行，只有到了p.join时才会阻塞主线程
-    available_ids = [1, 0]
+    available_ids = [2, 1]
     processes = []
 
     lock = Lock()

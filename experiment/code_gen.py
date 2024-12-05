@@ -25,11 +25,14 @@ def test():
     sch.bind(i, "blockIdx.x")
     sch.bind(j, "threadIdx.x")
     sch.bind(k, "threadIdx.y")
-    sch.mod.show()
+    #sch.mod.show()
     
     func_ir_runtime=tvm.build(sch.mod,target=target)
     func_ir_module0 = func_ir_runtime.imported_modules[0]
-    func_ir_source = func_ir_module0.get_source()
+    #func_ir_runtime.save("test.so")
+    func_ir_module0.save("test.ptx",fmt='ptx')
+    
+    func_ir_source = func_ir_module0.get_source(fmt='ptx')
     print(func_ir_source)
     # print(type(func_prim_func_source))
     # print(str(func_prim_func_source))

@@ -32,7 +32,6 @@ def read_from_jason(task):
         for shape in shape_list:
             shape_part.append([shape.dtype, tuple(shape.shape)])
         target_part = str(rec.target)
-        rec.
         # trace = rec.trace
         # # 这种可读性不如trace.show的可读性。
         # print(trace.as_python())

@@ -3,9 +3,9 @@ from multiprocessing import Process, Lock
 from urllib.parse import quote
 import math
 import shutil
-
-
-n_part = 2
+import subprocess
+import json
+n_part = 8
 
 
 def exec_cmd_if_error_send_mail(command):
@@ -23,7 +23,7 @@ def exec_cmd_if_error_send_mail(command):
 # 将to_measure下面的目录分割成n_part个部分，分别为a6000_part_0,a6000_part_1,a6000_part_2等。
 def divide_worker(lock):
     while True:
-        to_measure_list = glob.glob("./measure_data/to_measure/*")
+        to_measure_list = glob.glob("./measure_register/to_measure/*")
         ## 对 to_measure_list 进行过滤，移除那些名称中包含 _part_ 或 zip 的文件或目录，确保只处理特定类型的文件。
         ## to_measure_list包含fintuning_0123
         to_measure_list = [x for x in to_measure_list if '_part_' not in x and 'zip' not in x]
@@ -43,7 +43,7 @@ def divide_worker(lock):
                         source_dir = task
                         target_dir = source_dir.replace(to_measure_dir, dir_i)
                         shutil.copytree(source_dir, target_dir)
-                to_measure_bak_dir = os.path.join("measure_data/to_measure_bak", os.path.basename(to_measure_dir))
+                to_measure_bak_dir = os.path.join("measure_register/to_measure_bak", os.path.basename(to_measure_dir))
                 command = f"rm -rf {to_measure_bak_dir}; mv {to_measure_dir} {to_measure_bak_dir}"
                 exec_cmd_if_error_send_mail(command)
         time.sleep(10)
@@ -51,7 +51,7 @@ def divide_worker(lock):
 
 def merge_worker(lock):
     while True:
-        measure_part_list = glob.glob("measure_data/measured_part/*_part_*")
+        measure_part_list = glob.glob("measure_register/measured_part/*_part_*")
         for part_0 in measure_part_list:
             if '_part_0' in part_0:
                 finish = True
@@ -64,7 +64,7 @@ def merge_worker(lock):
                     merge_dir_list.append(part_i)
                 if finish:
                     with lock:
-                        measured_part_dir = os.path.join("measure_data/measured_part", os.path.basename(part_0[:-len('_part_0')]))
+                        measured_part_dir = os.path.join("measure_register/measured_part", os.path.basename(part_0[:-len('_part_0')]))
                         for dir in merge_dir_list:
                             tasks = glob.glob(f'{dir}/*')
                             for task in tasks:
@@ -72,40 +72,69 @@ def merge_worker(lock):
                                 dest = task.replace(dir, measured_part_dir)
                                 shutil.move(src, dest)
                             shutil.rmtree(dir)
-                        measured_dir = os.path.join("measure_data/measured", os.path.basename(part_0[:-len('_part_0')]))
+                        measured_dir = os.path.join("measure_register/measured", os.path.basename(part_0[:-len('_part_0')]))
                         src = measured_part_dir
                         dest = measured_dir
                         shutil.move(src, dest)
         time.sleep(10)
 
-
+def get_registers(candidate_path,result_path):
+    task_dirs = glob.glob(candidate_path,"*")
+    for task_dir in task_dirs:
+        cuda_files_path = os.path.join(task_dir,"cuda_code")
+        cuda_files = glob.glob(cuda_files_path,"*")
+        task_register_list = []
+        task_name = os.path.basename(task_dir)
+        result_task_path = os.path.join(result_path,task_name)
+        for cuda_file in cuda_files:
+            """编译 CUDA 文件并返回寄存器数量"""
+            cuda_file_name = os.path.basename(cuda_file)
+            try:
+                # 使用 nvcc 编译并获取输出
+                result = subprocess.run(
+                    ['nvcc', '-arch=sm_80', '--ptxas-options=-v', cuda_file],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                output = result.stdout
+                # 从输出中提取寄存器数量
+                for line in output.splitlines():
+                    if 'registers' in line:
+                        registers = int(line.split()[-2])  # 获取寄存器数量
+                        task_register_list.append({cuda_file_name:registers})
+            except Exception as e:
+                print(f"Error compiling {cuda_file}: {e}")
+                task_register_list.append({cuda_file_name:"failed"})
+            with open(f'{result_task_path}/register.json', 'w') as f:
+                json.dump(task_register_list, f)
 def worker(gpu_id, lock):
     time.sleep(9 - gpu_id)
 
     while True:
         with lock:
-            to_measure_list = glob.glob("measure_data/to_measure/*_part_*")
+            to_measure_list = glob.glob("measure_register/to_measure/*_part_*")
             to_measure_list.sort()
             to_measure_file = None
             if len(to_measure_list) > 0:
                 to_measure_file = to_measure_list[0]
 
-                to_measure_dir = f"measure_data/to_measure_{gpu_id}"
+                to_measure_dir = f"measure_register/to_measure_{gpu_id}"
                 os.makedirs(to_measure_dir, exist_ok=True)
                 to_measure_dir_file = os.path.join(to_measure_dir, os.path.basename(to_measure_file))
                 exec_cmd_if_error_send_mail(f"mv {to_measure_file} {to_measure_dir_file}")
 
         if to_measure_file:
-            measured_tmp_file = os.path.join("measure_data/measured_tmp", os.path.basename(to_measure_file))
-            command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{gpu_id}.log 2>&1"
-            exec_cmd_if_error_send_mail(command)
-            time.sleep(3)
+            measured_tmp_file = os.path.join("measure_register/measured_tmp", os.path.basename(to_measure_file))
+            #command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{gpu_id}.log 2>&1"
+            #exec_cmd_if_error_send_mail(command)
+            get_registers(to_measure_dir_file,measured_tmp_file)
 
-            # to_measure_bak_file = os.path.join("measure_data/to_measure_bak", os.path.basename(to_measure_file))
+            # to_measure_bak_file = os.path.join("measure_register/to_measure_bak", os.path.basename(to_measure_file))
             command = f"rm -rf {to_measure_dir_file}"
             exec_cmd_if_error_send_mail(command)
 
-            measured_file = os.path.join("measure_data/measured_part", os.path.basename(to_measure_file))
+            measured_file = os.path.join("measure_register/measured_part", os.path.basename(to_measure_file))
             with lock:
                 command = f"mv {measured_tmp_file} {measured_file}"
             exec_cmd_if_error_send_mail(command)
@@ -115,20 +144,20 @@ def worker(gpu_id, lock):
         time.sleep(10)
 
 
-os.makedirs('measure_data/to_measure', exist_ok=True)
-os.makedirs('measure_data/moved', exist_ok=True)
-os.makedirs('measure_data/measured', exist_ok=True)
-os.makedirs('measure_data/measured_part', exist_ok=True)
-os.makedirs('measure_data/measured_tmp', exist_ok=True)
-os.makedirs('measure_data/to_measure_bak', exist_ok=True)
+os.makedirs('measure_register/to_measure', exist_ok=True)
+os.makedirs('measure_register/moved', exist_ok=True)
+os.makedirs('measure_register/measured', exist_ok=True)
+os.makedirs('measure_register/measured_part', exist_ok=True)
+os.makedirs('measure_register/measured_tmp', exist_ok=True)
+os.makedirs('measure_register/to_measure_bak', exist_ok=True)
 
-os.system(f'mv measure_data/to_measure_*/*_part_* measure_data/to_measure/')
+os.system(f'mv measure_register/to_measure_*/*_part_* measure_register/to_measure/')
 
 try:
     # 注意，我们再measure_programs中指定了target=a6000，这里指定的target不会生效，只会和文件夹有关。
     
     # 下面的进程都会启动，并同时运行，只有到了p.join时才会阻塞主线程
-    available_ids = [1, 0]
+    available_ids = range(8)
     processes = []
 
     lock = Lock()

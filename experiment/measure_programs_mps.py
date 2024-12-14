@@ -7,6 +7,7 @@ from tvm import meta_schedule as ms
 from tvm.target import Target
 import logging
 import shutil
+import tvm
 
 def _parse_args():
     parser = argparse.ArgumentParser()
@@ -104,6 +105,11 @@ def measure_candidates(database, builder, runner, task_record):
             task_record._set_measure_candidates(batch_candidates)  # pylint: disable=protected-access
             with ms.Profiler.timeit("build"):
                 task_record._send_to_builder(builder)  # pylint: disable=protected-access
+                @tvm.register_func("tvm_codegen_maxreg",override=True)
+                def tvm_codegen_maxreg():
+                    i = 100000
+                    print("Yes")
+                    return i
             with ms.Profiler.timeit("run"):
                 task_record._send_to_runner(runner)  # pylint: disable=protected-access
                 batch_runner_results = task_record._join()  # pylint: disable=protected-access

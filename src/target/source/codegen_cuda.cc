@@ -75,18 +75,22 @@ class ThreadIdxExtractor : public tir::StmtVisitor {
 };
 
 void CodeGenCUDA::PrintExtraAttrs(const PrimFunc& f) {
-  ThreadIdxExtractor extractor;
-  extractor(f->body);
-  arith::Analyzer analyzer;
-  PrimExpr threadIdx_ext = analyzer.Simplify(extractor.threadIdx_x_ext * extractor.threadIdx_y_ext *
-                                             extractor.threadIdx_z_ext);
-  if (const IntImmNode* const threadIdx_ext_int = threadIdx_ext.as<IntImmNode>()) {
-    if (threadIdx_ext_int->value == 1) {
-      // unable to extract the number of threads per block, hence directly return
-      return;
-    }
-    stream << " __launch_bounds__(" << threadIdx_ext_int->value << ")";
-  }
+  // ThreadIdxExtractor extractor;
+  // extractor(f->body);
+  // arith::Analyzer analyzer;
+  // PrimExpr threadIdx_ext = analyzer.Simplify(extractor.threadIdx_x_ext * extractor.threadIdx_y_ext *
+  //                                            extractor.threadIdx_z_ext);
+  // if (const IntImmNode* const threadIdx_ext_int = threadIdx_ext.as<IntImmNode>()) {
+  //   if (threadIdx_ext_int->value == 1) {
+  //     // unable to extract the number of threads per block, hence directly return
+  //     return;
+  //   }
+  //   stream << " __launch_bounds__(" << threadIdx_ext_int->value << ")";
+  // }
+  const auto* func =  tvm::runtime::Registry::Get("tvm_codegen_maxreg");
+  int i = (*func)();
+  //std::cout <<"tvm_codegen_maxreg"<< i;
+  stream << " __maxnreg__(" << i << ")";
 }
 
 std::string CodeGenCUDA::Finish() {

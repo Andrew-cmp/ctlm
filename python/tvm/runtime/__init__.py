@@ -40,3 +40,4 @@ from .params import (
 )
 
 from . import executor
+from .code_gen_maxreg import tvm_codegen_maxreg

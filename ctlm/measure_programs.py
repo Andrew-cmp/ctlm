@@ -19,7 +19,7 @@ def _parse_args():
     parser.add_argument(
         "--target",
         type=str,
-        default="nvidia/nvidia-a6000",
+        default="nvidia/nvidia-a100",
         help="Please specify the target hardware for tuning context.",
     )
     parser.add_argument(
@@ -97,6 +97,8 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
             runner_results.extend(batch_runner_results)
             for i, result in enumerate(task_record.builder_results):
                 if result.error_msg is None:
+                    ## 这里其实只是没有包含build error的record，实际上runner error的recore也不需要记载其cuda code，只不过无上大雅
+                    ## 只要index保持不变即可
                     artifact_dir = os.path.dirname(result.artifact_path)
                     src = os.path.join(artifact_dir,"cuda_code.cu")
                     dst_dir = os.path.join(new_dir,"cuda_code")
@@ -132,6 +134,7 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
         os.path.join(args.result_cache_dir, model_name, fail_indices_name), "w", encoding="utf8"
     ) as file:
         file.write(" ".join([str(n) for n in run_fail_indices]))
+    print("this task is "+ model_name)
     print(
         f"Builder time: {profiler.get()['build']}, Runner time: {profiler.get()['run']}\n\
             Failed number of builds: {len(build_fail_indices)},\
@@ -144,8 +147,8 @@ args = _parse_args()  # pylint: disable=invalid-name
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    builder = ms.builder.LocalBuilder(timeout_sec=30)
-    runner = ms.runner.LocalRunner(timeout_sec=10)
+    builder = ms.builder.LocalBuilder(timeout_sec=3600)
+    runner = ms.runner.LocalRunner(timeout_sec=100)
     if not os.path.isdir(args.candidate_cache_dir):
         raise Exception("Please provide a correct candidate cache dir.")
     try:

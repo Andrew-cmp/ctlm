@@ -44,6 +44,7 @@ def json_to_token(json_lines):
     token_list = []
     for json_line in json_lines:
         text_list = []
+        # 只要text中的东西
         json_dfs_without_bracket(json_line["text"], text_list)
         json_line["text"] = " ".join(text_list)
         token_list.append(json_line)
@@ -81,7 +82,8 @@ def make_dataset(file, dataset_path, tokenizer_path, for_clm_or_mlm, valid_perce
         )
 
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-
+    # 假设 raw_datasets["train"].features 返回的是以下内容：{'text': Value('string'), 'label': ClassLabel(names=['positive', 'negative'])}
+    # 则 column_names 会变成：['text', 'label']
     column_names = list(raw_datasets["train"].features)
     if for_clm_or_mlm == "clm":
         def tokenize_function(examples):

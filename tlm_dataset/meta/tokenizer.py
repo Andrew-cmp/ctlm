@@ -27,14 +27,21 @@ def train_tokenizer(files, save_path, test_length):
             tmp_file_f.write(text)
             tmp_file_f.write("\n")
     tmp_file_f.close()
-
+    # wordlevel的分词器
     tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
+    # [CLS]代表“分类”（Classification）的起始标记。许多预训练模型（如BERT、GPT等）
+    # 使用它作为整个输入序列的表示，用于分类任务。
+    # [SEP]，代表“分隔符”（Separator），用于分隔两个句子。它帮助模型区分输入序列中的不同部分。
     trainer = WordLevelTrainer(
         special_tokens=["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]", "[EOS]", "[BOS]"])
+    # 根据空格分隔word
     tokenizer.pre_tokenizer = WhitespaceSplit()
     tokenizer.train([tmp_file], trainer)
+    # 后处理模板
     tokenizer.post_processor = TemplateProcessing(
+        # 单个句子在句子前后加上 cls 和 sep 两个字符
         single="[CLS] $A [SEP]",
+        # 句对,正对两句变化的情况
         pair="[CLS] $A [SEP] $B:1 [SEP]:1",
         special_tokens=[
             ("[CLS]", tokenizer.token_to_id("[CLS]")),
@@ -43,7 +50,9 @@ def train_tokenizer(files, save_path, test_length):
     )
     tokenizer.enable_padding(
         pad_id=tokenizer.token_to_id("[PAD]"), pad_token="[PAD]")
-
+    # PreTrainedTokenizerFast 接受一个 tokenizer_object，这里是你之前训练好的 tokenizer
+    # （基于 tokenizers 库的 Tokenizer 对象）。这样，训练好的分词器就被包装成 Hugging Face 
+    # 兼容的分词器对象，便于后续与 transformers 库中的模型进行集成。
     tokenizer_fast = PreTrainedTokenizerFast(
         tokenizer_object=tokenizer)
     tokenizer_fast.add_special_tokens({
@@ -63,7 +72,8 @@ def train_tokenizer(files, save_path, test_length):
     if os.path.exists(tmp_file):
         os.remove(tmp_file)
 
-
+# 主要目的是测试和调整分词器（Tokenizer）的最大序列长度，
+# 以确保它能够处理数据集中所有文本的长度，并优化其性能。下面是对该函数的详细解释：
 def test_model_max_length(file, save_path):
     data_files = {}
     data_files["train"] = file

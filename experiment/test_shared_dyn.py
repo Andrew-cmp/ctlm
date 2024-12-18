@@ -68,10 +68,13 @@ def tvm_callback_cuda_compile(code):
     with open("test_shared_dyn.ptx",'wb')as f:
         f.write(ptx)
     return ptx
+@tvm._ffi.register_func("tvm_codegen_maxreg",override=True)
+def tvm_codegen_maxreg():
+    i = -1
+    return i
+lib = tvm.build(Module, target='nvidia/nvidia-a100')
 
-lib = tvm.build(Module, target='nvidia/nvidia-a6000')
-
-with open("/home/houhw/tlm/experiment/GenCUDA.cpp",'w') as f:
+with open("GenCUDA.cpp",'w') as f:
     f.write(str(lib.imported_modules[0].get_source()))
 
 print("ToTest")

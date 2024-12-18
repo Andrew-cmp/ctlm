@@ -280,13 +280,16 @@ def default_export(mod: Module) -> str:
         The path to the exported Module.
     """
     from tvm.contrib.tar import tar  # pylint: disable=import-outside-toplevel
-    artifact_base_dir="/home/hwhu/ctlm/experiment/measure_data/tmp"
-    artifact_path = os.path.join(tempfile.mkdtemp(dir=artifact_base_dir), "tvm_tmp_mod." + tar.output_format)
-    mod.export_library(artifact_path, tar)
-    hold_path = os.path.dirname(artifact_path)
-    cuda_code_path = os.path.join(hold_path,"cuda_code.cu")
-    ptx_code_path = os.path.join(hold_path,"ptx_code.ptx")
+    #artifact_base_dir="/home/hwhu/ctlm/experiment/measure_data/tmp"
+    #artifact_path = os.path.join(tempfile.mkdtemp(dir=artifact_base_dir), "tvm_tmp_mod." + tar.output_format)
+    #mod.export_library(artifact_path, tar)
+    #hold_path = os.path.dirname(artifact_path)
+    #cuda_code_path = os.path.join(hold_path,"cuda_code.cu")
+    #ptx_code_path = os.path.join(hold_path,"ptx_code.ptx")
+    #with open(cuda_code_path,"w") as f:
+    #    f.write(mod.imported_modules[0].get_source())
     
-    with open(cuda_code_path,"w") as f:
-        f.write(mod.imported_modules[0].get_source())
+    
+    artifact_path = os.path.join(tempfile.mkdtemp(), "tvm_tmp_mod." + tar.output_format)
+    mod.export_library(artifact_path, tar)
     return artifact_path

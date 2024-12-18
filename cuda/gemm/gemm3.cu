@@ -9,7 +9,6 @@ __global__ void gemm_kernel(ELE_TYPE* A, ELE_TYPE* B,ELE_TYPE* C){
     int x = blockIdx.x*blockDim.x + threadIdx.x;
     // col指的是列上的坐标，而不是第几列
     int y = blockIdx.y*blockDim.y + threadIdx.y;
-    printf("blockIdx.x:%d blockDim.x:%d threadIdx.x:%d x:%d\n",blockIdx.x,blockDim.x , threadIdx.x,x);
     __shared__ ELE_TYPE Sa[BLOCK_DIM][BLOCK_DIM];
     __shared__ ELE_TYPE Sb[BLOCK_DIM][BLOCK_DIM];
     ELE_TYPE sum = 0;
@@ -63,8 +62,8 @@ int main(){
     cudaMemcpy(d_a,h_a,size_A,cudaMemcpyHostToDevice);
     cudaMemcpy(d_b,h_b,size_B,cudaMemcpyHostToDevice);
     dim3 blockDim(8,8);
-    dim3 gridDim((N+threadperblock.x-1)/threadperblock.x,
-                      (M+threadperblock.y-1)/threadperblock.y );
+    dim3 gridDim((N+blockDim.x-1)/blockDim.x,
+                      (M+blockDim.y-1)/blockDim.y );
     //草，大模型给的代码，下面的GridDim和blockDim位置对调了
     //gemm_kernel<M,N,K><<<blockDim,gridDim>>>(d_a,d_b,d_c);
     gemm_kernel<M,N,K><<<gridDim,blockDim>>>(d_a,d_b,d_c);

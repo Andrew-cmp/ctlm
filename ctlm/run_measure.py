@@ -3,15 +3,16 @@ from multiprocessing import Process, Lock
 from urllib.parse import quote
 import math
 import shutil
+import re
 
-
-n_part = 12
+n_part = 4
 
 
 def exec_cmd_if_error_send_mail(command):
     print("#" * 50)
     print("command:", command)
     returncode = os.system(command)
+    print("returncode:", returncode)
     return returncode
 
 
@@ -85,6 +86,7 @@ def worker(gpu_id, lock):
     while True:
         with lock:
             to_measure_list = glob.glob("measure_data/to_measure/*_part_*")
+            
             to_measure_list.sort()
             to_measure_file = None
             if len(to_measure_list) > 0:
@@ -96,11 +98,20 @@ def worker(gpu_id, lock):
                 exec_cmd_if_error_send_mail(f"mv {to_measure_file} {to_measure_dir_file}")
 
         if to_measure_file:
+            base_name = os.path.basename(to_measure_file)
+            match = re.search(r'_(\d+)', base_name)
+            part_id = match.group(1)
             measured_tmp_file = os.path.join("measure_data/measured_tmp", os.path.basename(to_measure_file))
-            command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{gpu_id}.log 2>&1"
-            exec_cmd_if_error_send_mail(command)
-            time.sleep(3)
-
+            print(f"part_id is :{part_id}")
+            moved_dir = "measure_data/moved"
+            while True:
+                command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --result_error_threshold=5 --moved_dir={moved_dir} --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} >> run_{part_id}.log 2>&1"
+                returncode = exec_cmd_if_error_send_mail(command)
+                if(returncode != 0):
+                    time.sleep(3)
+                    returncode = exec_cmd_if_error_send_mail(command)
+                else:
+                    break
             # to_measure_bak_file = os.path.join("measure_data/to_measure_bak", os.path.basename(to_measure_file))
             command = f"rm -rf {to_measure_dir_file}"
             exec_cmd_if_error_send_mail(command)
@@ -121,7 +132,6 @@ os.makedirs('measure_data/measured', exist_ok=True)
 os.makedirs('measure_data/measured_part', exist_ok=True)
 os.makedirs('measure_data/measured_tmp', exist_ok=True)
 os.makedirs('measure_data/to_measure_bak', exist_ok=True)
-os.makedirs('measure_data/tmp', exist_ok=True)
 
 os.system(f'mv measure_data/to_measure_*/*_part_* measure_data/to_measure/')
 
@@ -129,7 +139,7 @@ try:
     # 注意，我们再measure_programs中指定了target=a6000，这里指定的target不会生效，只会和文件夹有关。
     
     # 下面的进程都会启动，并同时运行，只有到了p.join时才会阻塞主线程
-    available_ids = [2, 1]
+    available_ids = [2,1]
     processes = []
 
     lock = Lock()
@@ -148,6 +158,9 @@ try:
         processes.append(p)
     for p in processes:
         p.join()
+#创建多个进程来执行不同的任务，其中包括 divide_worker 和 merge_worker 函数，以及针对每个 available_ids 中的 ID 调用的 worker 函数。
+#通过使用锁来管理对共享资源的访问，确保线程安全。
+#启动所有进程，并在主进程中等待所有子进程完成。
 except:
     print("Received KeyboardInterrupt, terminating workers")
     for p in processes:

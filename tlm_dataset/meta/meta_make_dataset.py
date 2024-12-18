@@ -133,7 +133,9 @@ def for_gen_train_sketch(work_dir, keep_cnt):
         ppt_line = {'text': [task_name_part, shape_part, target_part, insts_part, decisions_part, ppt],
                     'hash': hash,
                     'task_name': task_name}
+        # 全部转化为str，单纯方便放到prompt_set 做hash
         ppt_line_str = str(ppt_line)
+        # 真正要利用到的train line，内含text、hash、task_name和line四个键值对，放到prompt_lines做备选
         ppt_line['line'] = line
         if ppt_line_str not in prompt_set:
             prompt_set.add(ppt_line_str)
@@ -165,12 +167,14 @@ def for_gen_best(work_dir):
 
         if ppt_line_str not in prompt_dic or prompt_dic[ppt_line_str][0] > latency:
             prompt_dic[ppt_line_str] = (latency, data_line)
-
+    # 为data_line新增label键，值等于min_latency的倍数
     for _, (latency, data_line) in prompt_dic.items():
         data_line['label'] = min_latency / data_line['latency']
-        
+    # 将所有的data_line提取出来
     prompt_dic_list = [x[1] for x in list(prompt_dic.values())]
+    # 根据lable排序
     prompt_dic_list.sort(key=lambda x: x['label'], reverse=True)
+    # 取排名第一的
     from meta_common import HARDWARE_PLATFORM
     if HARDWARE_PLATFORM == 'i7':
         prompt_dic_list = prompt_dic_list[:1]
@@ -178,6 +182,7 @@ def for_gen_best(work_dir):
         prompt_dic_list = prompt_dic_list[:1]
     else:
         assert(False)
+    # 应该是只返回一个文件中最好的那个
     return prompt_dic_list
 
 
@@ -195,7 +200,7 @@ def process_file(args, tmp_folder, for_type, keep_cnt):
         data_list = json_to_token(data_list)
     else:
         assert(False)
-
+    # 对task每一行做一些处理，比如提取decision label等，然后以字符串的形式写到同一个json里
     with open(f"{tmp_folder}/{work_dir_i}_part", "w") as f:
         for data in data_list:
             json.dump(data, f)

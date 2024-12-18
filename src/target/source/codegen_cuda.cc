@@ -87,10 +87,19 @@ void CodeGenCUDA::PrintExtraAttrs(const PrimFunc& f) {
   //   }
   //   stream << " __launch_bounds__(" << threadIdx_ext_int->value << ")";
   // }
-  const auto* func =  tvm::runtime::Registry::Get("tvm_codegen_maxreg");
-  int i = (*func)();
-  //std::cout <<"tvm_codegen_maxreg"<< i;
-  stream << " __maxnreg__(" << i << ")";
+
+
+  
+  // const auto* func =  tvm::runtime::Registry::Get("tvm_codegen_maxreg");
+  // int i = (*func)();
+  // //std::cout <<"tvm_codegen_maxreg"<< i;
+  // if(i > 0){
+  //   stream << " __maxnreg__(" << i << ")";
+  // }
+  // else{
+
+  // }
+  
 }
 
 std::string CodeGenCUDA::Finish() {

@@ -8,7 +8,7 @@ from tvm.target import Target
 import logging
 import shutil
 import tvm
-
+import json
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -76,6 +76,8 @@ def rm_dir(dirs,path):
         shutil.rmtree(tmp)
 @tvm._ffi.register_func("tvm_codegen_maxreg",override=True)
 def tvm_codegen_maxreg():
+    # with open("1.json",'w') as f:
+    #     json.load("1.json")
     i = -1
     return i
 # pylint: disable=too-many-locals
@@ -95,7 +97,7 @@ def measure_candidates(database, builder, runner, task_record):
     Returns
     -------
     None
-    """
+    """ 
     candidates, runner_results, build_fail_indices, run_fail_indices = [], [], [], []
     tuning_records = database.get_all_tuning_records()
     if len(tuning_records) == 0:
@@ -158,10 +160,15 @@ def measure_candidates(database, builder, runner, task_record):
             raise MPSError("error")
             
     fail_indices_name = workload_name.replace("_workload.json", "_failed_indices.txt")
+    build_fail_indices_name = workload_name.replace("_workload.json", "_build_failed_indices.txt")
     with open(
         os.path.join(args.result_cache_dir, model_name, fail_indices_name), "w", encoding="utf8"
     ) as file:
         file.write(" ".join([str(n) for n in run_fail_indices]))
+    with open(
+        os.path.join(args.result_cache_dir, model_name, build_fail_indices_name), "w", encoding="utf8"
+    ) as file:
+        file.write(" ".join([str(n) for n in build_fail_indices]))
     print(
         f"Builder time: {profiler.get()['build']}, Runner time: {profiler.get()['run']}\n\
             Build model is {model_name}\n\

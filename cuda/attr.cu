@@ -12,6 +12,8 @@ int main() {
     printf("Device name: %s\n" , prop.name) ;
     printf("Compute capability: %d\n"  , prop.minor) ;
     
+    cudaError_t err = cudaDeviceSetCacheConfig(cudaFuncCachePreferEqual);
+
     GETATTR(cudaDevAttrMultiProcessorCount,0);
     GETATTR(cudaDevAttrMaxSharedMemoryPerBlock,0);
     GETATTR(cudaDevAttrWarpSize,0);

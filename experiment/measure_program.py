@@ -69,6 +69,25 @@ def _parse_args():
 #     return ptx
 
 # pylint: disable=too-many-locals
+def deal_with_candidates(candidates):
+    # print(f"len(candidates):{len(candidates)}")
+    # print("*"*30)
+    # print(f"sch0:{candidates[0].sch}")
+    # print("*"*30)
+    # print(f"sch1:{candidates[1].sch}")
+    # print("*"*30)
+    # print(f"mod0:{candidates[0].sch.mod}")
+    # print("*"*30)
+    # print(f"mod1:{candidates[1].sch.mod}")
+    # print("*"*30)
+    
+    func = candidates[1].sch.mod["main"]
+    func_with_attr = func.with_attr({"some_attr": "attr_value"})
+    candidates[1].sch.mod.update_func(candidates[1].sch.mod.get_global_var("main"), func_with_attr)
+    with open("1.tmp","w") as f:
+        f.write(str(candidates[1].sch.mod))
+    input("continue...")
+
 def measure_candidates(database, builder, runner, task_record,new_dir):
     """Send the candidates to builder and runner for distributed measurement,
     and save the results in a new json database.
@@ -92,6 +111,7 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
         return
     for record in tuning_records:
         candidates.append(record.as_measure_candidate())
+    deal_with_candidates(candidates)
     with ms.Profiler() as profiler:
         for idx in range(0, len(candidates), args.batch_size):
             batch_candidates = candidates[idx : idx + args.batch_size]
@@ -105,11 +125,11 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
             for i, result in enumerate(task_record.builder_results):
                 if result.error_msg is None:
                     #print(result.artifact_path)
-                    artifact_dir = os.path.dirname(result.artifact_path)
-                    src = os.path.join(artifact_dir,"cuda_code.cu")
-                    dst_dir = os.path.join(new_dir,"cuda_code")
-                    dst = os.path.join(dst_dir,f"{i+idx}.cu")
-                    shutil.move(src,dst)
+                    # artifact_dir = os.path.dirname(result.artifact_path)
+                    # src = os.path.join(artifact_dir,"cuda_code.cu")
+                    # dst_dir = os.path.join(new_dir,"cuda_code")
+                    # dst = os.path.join(dst_dir,f"{i+idx}.cu")
+                    # shutil.move(src,dst)
                     ms.utils.remove_build_dir(result.artifact_path)
                     
                 else:
@@ -180,11 +200,6 @@ def main():
         
     task_record = ms.task_scheduler.task_scheduler.TaskRecord(
         ms.TuneContext(target=Target(args.target)))
-    
-    
-    
-    
-    
     
     database = ms.database.JSONDatabase(work_dir=args.candidate_cache_dir)
     measure_candidates(database, builder, runner, task_record,new_dir)

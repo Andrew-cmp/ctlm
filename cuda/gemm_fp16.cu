@@ -82,9 +82,9 @@ inline __device__ __host__ size_t div_ceil(size_t a, size_t b) {
 #define CP_ASYNC_WAIT_ALL() asm volatile("cp.async.wait_all;\n" ::)
 
 
-#define K_STAGE 2 // 2 - 5
-#define BLOCK_ROWS 128 //256  32
-#define BLOCK_COLS 64 //128  32
+#define K_STAGE 3 // 2 - 5
+#define BLOCK_ROWS 256 //256  32
+#define BLOCK_COLS 256 //128  32
 #define BLOCK_K    32 
  
 #define WARP_ROWS 128 // 128 64 32 16 
@@ -151,8 +151,6 @@ __global__ void mmaPermuted_Coalesced_32Stride(const half *__restrict__ A, const
     //}
 
     extern __shared__ half smem[][AB_SMEM_STRIDE]; // AB_SMEM_STRIDE = 32
-    // __shared__ half smem[1024][32]; // AB_SMEM_STRIDE = 32
-
 
     const size_t warp_id = threadIdx.x / WARP_SIZE; // warp_size = 32
     const size_t lane_id = threadIdx.x % WARP_SIZE;
@@ -161,10 +159,9 @@ __global__ void mmaPermuted_Coalesced_32Stride(const half *__restrict__ A, const
 
     // BLOCK_ROW_WARPS = 2, C_SMEM_STRIDE = 128, WARP_ROWS = 64, WARP_COLS = 64
     // MMA_M = 16, MMA_N = 8, MMA_K = 16
-    // # NOTE 改一个线程占用的寄存器
     int RA[2][WARP_COL_TILES][4];
     int RB[2][WARP_ROW_TILES][2];
-    int RC[WARP_COL_TILES][WARP_ROW_TILES][2+72] = {0};
+    int RC[WARP_COL_TILES][WARP_ROW_TILES][2] = {0};
 
     //WARPS_PER_BLOCK = 8, BLOCK_ROWS = 256, BLOCK_COLS = 128, WARPS_PER_BLOCK = 8
     const half *A_warp_ptr = &A[block_tile_i * BLOCK_ROWS * K] + BLOCK_ROWS / WARPS_PER_BLOCK * K * warp_id;
@@ -733,10 +730,9 @@ size_t initMmaPermuted() {
 
     int smem_max_size = std::max((SMEM_WARP_OFFSET) * AB_SMEM_STRIDE * sizeof(half) * K_STAGE,
                                     BLOCK_ROWS * C_SMEM_STRIDE * sizeof(half));
-    // smem_max_size += 30000; #NOTE 一个threadblock占用的smem
     //printf("smem_max_size: %.0f KBytes (%zu Bytes)\n", static_cast<double>(smem_max_size) / 1024, smem_max_size);
 
-    // (dev_prop.sharedMemPerMultiprocessor, smem_max_size);
+    (dev_prop.sharedMemPerMultiprocessor, smem_max_size);
     (cudaFuncSetAttribute(mmaPermuted_Coalesced_32Stride, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_max_size));
 
     return smem_max_size;
@@ -884,6 +880,7 @@ int main(int arg, char* argv[]){
     const int N_list[test_num] = {8 , 512, 1024, 4096, 8192};
     const int K_list[test_num] = {16, 128, 1024, 4096, 8192};
     const int outer_repeat = 1, inner_repeat = 10;
+    cudaSetDevice(1);
     //{
     //    //const int M = 256, N = 256, K = 256;
     //    int M = std::atoi(argv[1]), N = std::atoi(argv[2]), K = std::atoi(argv[3]);

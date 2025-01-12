@@ -10,11 +10,13 @@ tlm_dataset/meta/measured/
 tlm_dataset/meta/meta_data/
 tlm_dataset/meta/tmp_folder/
 ctlm/measure_data/
-ctlm/measure_data_100_100_100/
+ctlm/measure_data_*/
 ctlm/dataset/
 experiment/dataset/
 experiment/measure_data/
 experiment/exp_data/
+cuda/gemm_fp16.cu
+cuda/cost_model.py
 *.sqlite
 *.nsys-rep
 tlm_dataset.zip

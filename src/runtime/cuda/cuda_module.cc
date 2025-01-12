@@ -172,11 +172,10 @@ class CUDAWrappedFunc {
     ThreadWorkLoad wl = launch_param_config_.Extract(args);
 
 
-    cudaError_t err = cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
-    if (err != cudaSuccess) {
-        LOG(FATAL) << "Error setting shared memory config: " << cudaGetErrorString(err) << std::endl;
-        
-    }
+    // cudaError_t err = cudaDeviceSetCacheConfig(cudaFuncCachePreferEqual);
+    // if (err != cudaSuccess) {
+    //     LOG(FATAL) << "Error setting shared memory config: " << cudaGetErrorString(err) << std::endl;
+    // }
 
 
     if (fcache_[device_id] == nullptr) {

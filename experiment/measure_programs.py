@@ -73,7 +73,7 @@ def rm_dir(dirs,path):
     for dir in dirs:
         tmp = os.path.join(path,dir)
         shutil.rmtree(tmp)
-
+record_index = 0
 # pylint: disable=too-many-locals
 def measure_candidates(database, builder, runner, task_record):
     """Send the candidates to builder and runner for distributed measurement,
@@ -102,6 +102,7 @@ def measure_candidates(database, builder, runner, task_record):
         for idx in range(0, len(candidates), args.batch_size):
             batch_candidates = candidates[idx : idx + args.batch_size]
             task_record._set_measure_candidates(batch_candidates)  # pylint: disable=protected-access
+            print(len(task_record.measure_candidates))
             with ms.Profiler.timeit("build"):
                 task_record._send_to_builder(builder)  # pylint: disable=protected-access
             with ms.Profiler.timeit("run"):

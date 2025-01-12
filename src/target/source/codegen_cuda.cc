@@ -99,7 +99,6 @@ void CodeGenCUDA::PrintExtraAttrs(const PrimFunc& f) {
   // else{
 
   // }
-  
 }
 
 std::string CodeGenCUDA::Finish() {

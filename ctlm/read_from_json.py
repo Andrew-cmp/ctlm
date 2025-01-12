@@ -13,8 +13,6 @@ from tvm.meta_schedule.database import JSONDatabase
 from tvm import meta_schedule as ms
 import numpy as np
 import copy
-from tvm import target
-from tvm.tir.schedule import Instruction
 def recursion_reset_json(json):
     assert(isinstance(json, (list, tuple)))
     for idx, it in enumerate(json):
@@ -74,8 +72,8 @@ def read_from_json(task_path):
                                    ("insts_part",insts_part),("decisions_part",decisions_part),
                                     ppt, 
                                     ("decisions_label",decisions_label),("parallel_label",parallel_label)]})
-    # with open("decision.json","w") as f:
-    #     json.dump(data_list, f, indent=1)
+    with open("decision.json","w") as f:
+        json.dump(data_list, f, indent=1)
 def for_init_lines(lines, path_tuning_record):
     lines = [x for x in lines if x]
     for line in lines:
@@ -106,60 +104,7 @@ def for_init_lines(lines, path_tuning_record):
             dec[0] = dec_label[0]
         
         yield line, insts_part, decisions_part, decisions_label, parallel_label, latency 
-def set_func_attr(work_dir):
-    path_tuning_record = os.path.join(work_dir, 'database_tuning_record.json')
-    path_workload = os.path.join(work_dir, 'database_workload.json')
 
-    with open(path_tuning_record, 'r') as f:
-        lines = f.read().strip().split('\n')
-
-    database = ms.database.JSONDatabase(path_workload=path_workload, path_tuning_record=path_tuning_record)
-    all_records = database.get_all_tuning_records()
-    task_name_part = None
-    shape_part = []
-    target_part = None
-
-    hash_task_name = os.path.basename(work_dir)
-    assert('__' in hash_task_name)
-    hash, task_name = hash_task_name.split('__')
-    task_name_part = task_name.split('_')
-
-    mod = all_records[0].workload.mod
-    sch = mod["main"]
-    
-    print(all_records[0].trace)
-    trace = all_records[0].trace
-    
-    # for ins in trace.insts:
-    #     print(ins)
-    print(type(trace.decisions))
-    for k ,v in trace.decisions.items():
-        print(f"K:{k}\nV:{v}")
-    # target_path = os.path.join(os.path.dirname(__file__),"trash.print")
-    # target_path = os.path.join(target_path,os.path.basename(work_dir))
-    # new_database = ms.database.JSONDatabase(
-    #     path_workload=os.path.join(target_path, 'database_tuning_record.json'),
-    #     path_tuning_record=os.path.join(target_path, 'database_workload.json'),
-    # )
-    # # old_workload = all_records[0].workload
-    # # mod = old_workload.mod
-    # # func = mod['main']
-    # # func_with_attr = func.with_attr({"some_attr": "attr_value"})
-    # # mod.update_func(mod.get_global_var("main"), func_with_attr)
-    # # print(mod)
-    
-    
-    # new_workload = new_database.commit_workload(mod)
-    # for rec in all_records:
-    #     new_database.commit_tuning_record(
-    #         ms.database.TuningRecord(
-    #             trace=rec.trace,
-    #             workload=new_workload,
-    #             target=rec.target,
-    #         )
-    #     )
-
-    
 parser = argparse.ArgumentParser()  # pylint: disable=invalid-name
 # parser.add_argument(
 #     "--target",
@@ -172,5 +117,5 @@ parser.add_argument(
     required=True,
 )  
 args = parser.parse_args()  # pylint: disable=invalid-name
-#read_from_json(args.task_path)
-set_func_attr(args.task_path)
+read_from_json(args.task_path)
+

@@ -41,6 +41,7 @@
 #include <tvm/support/parallel_for.h>
 #include <tvm/tir/schedule/schedule.h>
 #include <tvm/tir/transform.h>
+#include <tvm/tir/function.h>
 
 #include <algorithm>
 #include <string>

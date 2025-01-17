@@ -7,7 +7,7 @@ from make_dataset_utils import json_to_token, make_dataset
 import tqdm
 from multiprocessing import Pool
 from tokenizer import train_tokenizer
-#from meta_common import register_data_path, get_hold_out_five_files
+# from meta_common import register_data_path, get_hold_out_five_files
 import tvm
 from functools import partial
 import numpy as np
@@ -29,6 +29,7 @@ class ScriptArguments:
     # 通过 field，你可以为每个字段设置默认值、默认值生成方式、是否包含在特定方法（如 __repr__、__eq__ 等）中，甚至定义字段的元数据（metadata）。
     # field 函数来自 dataclasses 模块，它的主要作用是为数据类的字段提供额外的配置。
     for_type: str = field(metadata={"help": "", "choices": [FOR_GEN_TOKENIZER, FOR_GEN, FOR_GEN_BEST, FOR_GEN_TRAIN_SKETCH, FOR_GEN_EVAL_SKETCH, FOR_GEN_EVALTUNING_SKETCH, FOR_GEN_BEST_ALL]})
+
     dataset_path: str = field(metadata={"help": ""})
     tokenizer_path: str = field(metadata={"help": ""})
     target: str = field(default=None,metadata={"help": ""})
@@ -80,6 +81,7 @@ def for_init_workload(work_dir):
         target_part = str(rec.target)
     
     return lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name
+
 
 
 def for_init_lines(lines, path_tuning_record):
@@ -149,8 +151,8 @@ def for_gen_tokenizer(work_dir):
     # input()
     return prompt_dic_list
 
-def process_file(args, tmp_folder, for_type, keep_cnt):
-    work_dir_i, work_dir = args
+
+def process_file(work_dir_i,work_dir, tmp_folder, for_type, keep_cnt):
     print('work_dir:', work_dir_i, ' ' * 30, end='\r')
     if for_type == FOR_GEN_TOKENIZER:
         data_list = for_gen_tokenizer(work_dir)
@@ -170,8 +172,8 @@ def token_files_and_merge(for_type, dirs, save_path, keep_cnt=None):
     if os.path.exists(tmp_folder):
         shutil.rmtree(tmp_folder)
     os.makedirs(tmp_folder)
-    with Pool() as pool:
-        pool.map(partial(process_file, tmp_folder=tmp_folder, for_type=for_type, keep_cnt=keep_cnt), enumerate(dirs))
+    for work_dir_i , work_dir in enumerate(dirs):
+        process_file(work_dir_i,work_dir,tmp_folder=tmp_folder, for_type=for_type, keep_cnt=keep_cnt)
     # 这行代码使用 subprocess.run 函数在 shell 中执行一个命令。具体来说，它将 tmp_folder 目录下所有以 _part 结尾的文件内容合并到一个名为 0_merge 的文件中。
     subprocess.run(f"cat {tmp_folder}/*_part > {filename}", shell=True)
     # 将tmp_folder目录下的文件删除
@@ -186,7 +188,7 @@ def main():
     filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.tokenizer_path)
     train_tokenizer([filename], script_args.tokenizer_path, test_length=True)
 main()
-# python make_dataset.py \
+# python make_dataset_debug.py \
 # --for_type=for_gen_tokenizer \
 # --dataset_path=/home/hwhu/ctlm/ctlm/dataset/measure_records/v100_100_default_100 \
 # --tokenizer_path=ctlm_data/gen_tokenizer

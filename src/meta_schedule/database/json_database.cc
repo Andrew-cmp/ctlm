@@ -122,7 +122,7 @@ class JSONDatabaseNode : public DatabaseNode {
                            /*tuning_record=*/record->AsJSON()  //
                        }));
   }
-
+  
   Array<TuningRecord> GetTopK(const Workload& workload, int top_k) {
     CHECK_GE(top_k, 0) << "ValueError: top_k must be non-negative";
     if (top_k == 0) {

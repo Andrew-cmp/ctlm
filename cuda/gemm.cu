@@ -53,7 +53,16 @@ void gemm(float *h_A, float *h_B, float *h_C, int M, int N, int K, float alpha, 
     size_t size_A = M * K * sizeof(float);
     size_t size_B = K * N * sizeof(float);
     size_t size_C = M * N * sizeof(float);
-
+    cudaError_t err = cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
+    if (err != cudaSuccess) {
+       printf("Error setting shared memory config: %s",cudaGetErrorString(err)) ;
+    }
+    cudaFuncCache pCacheConfig;
+    cudaError_t err3 = cudaDeviceGetCacheConfig(&pCacheConfig);
+    if (err != cudaSuccess) {
+        printf("Error setting shared memory config: %s",cudaGetErrorString(err3)) ;
+     }
+    printf("%d\n",pCacheConfig);
     // Allocate device memory
     cudaMalloc((void**)&d_A, size_A);
     cudaMalloc((void**)&d_B, size_B);
@@ -70,7 +79,9 @@ void gemm(float *h_A, float *h_B, float *h_C, int M, int N, int K, float alpha, 
 
     // Launch the GEMM kernel
     gemmKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, M, N, K, alpha, beta);
-
+    cudaFuncAttributes attr;
+    cudaError_t err2 = cudaFuncGetAttributes(&attr, "gemmKernel");
+    printf("Shared memory size for myKernel: %d\n", attr.sharedSizeBytes);
     // Copy the result matrix C back to the host
     cudaMemcpy(h_C, d_C, size_C, cudaMemcpyDeviceToHost);
 

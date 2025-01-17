@@ -7,6 +7,7 @@ from tvm import meta_schedule as ms
 from tvm.target import Target
 import logging
 import shutil
+import json
 #只针对单个task测量，并且将cuda代码保存到新的文件夹中
 def _parse_args():
     parser = argparse.ArgumentParser()
@@ -69,7 +70,7 @@ def _parse_args():
 #     return ptx
 
 # pylint: disable=too-many-locals
-def deal_with_candidates(candidates):
+def add_candidates_func_attr(candidates):
     # print(f"len(candidates):{len(candidates)}")
     # print("*"*30)
     # print(f"sch0:{candidates[0].sch}")
@@ -80,13 +81,26 @@ def deal_with_candidates(candidates):
     # print("*"*30)
     # print(f"mod1:{candidates[1].sch.mod}")
     # print("*"*30)
-    
-    func = candidates[1].sch.mod["main"]
-    func_with_attr = func.with_attr({"some_attr": "attr_value"})
-    candidates[1].sch.mod.update_func(candidates[1].sch.mod.get_global_var("main"), func_with_attr)
-    with open("1.tmp","w") as f:
-        f.write(str(candidates[1].sch.mod))
-    input("continue...")
+    file_name = os.path.basename(args.candidate_cache_dir)
+    register_path = "/home/hwhu/ctlm/ctlm/dataset/measure_register/measured/a100_100_100_100"
+    register_path = os.path.join(register_path,file_name)
+    register_json_path = os.path.join(register_path,"register.json")
+    with open(register_json_path,"r") as f:
+        registers = json.load(f)
+    registers_dict = dict()
+    for register in registers:
+        registers_dict.update(register)
+   
+    #print(registers)
+    #print(registers_dict)
+    for i, candidate in enumerate(candidates):
+        func = candidate.sch.mod["main"]
+        name = f"{i}.cu"
+        register = registers_dict[name] 
+        func_with_attr = func.with_attr({"register": register})
+        candidate.sch.mod.update_func(candidate.sch.mod.get_global_var("main"), func_with_attr)
+        #input("continue...")
+    return candidates
 
 def measure_candidates(database, builder, runner, task_record,new_dir):
     """Send the candidates to builder and runner for distributed measurement,
@@ -111,7 +125,12 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
         return
     for record in tuning_records:
         candidates.append(record.as_measure_candidate())
-    deal_with_candidates(candidates)
+    candidates = add_candidates_func_attr(candidates)
+    # print(f"mod0:{candidates[0].sch.mod}")
+    # print("*"*30)
+    # print(f"mod1:{candidates[1].sch.mod}")
+    input("continue...")
+    
     with ms.Profiler() as profiler:
         for idx in range(0, len(candidates), args.batch_size):
             batch_candidates = candidates[idx : idx + args.batch_size]
@@ -131,7 +150,7 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
                     # dst = os.path.join(dst_dir,f"{i+idx}.cu")
                     # shutil.move(src,dst)
                     ms.utils.remove_build_dir(result.artifact_path)
-                    
+                    print(result.error_msg)
                 else:
                     build_fail_indices.append(i + idx)
             task_record._clear_measure_state(batch_runner_results)  # pylint: disable=protected-access
@@ -207,4 +226,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-#python measure_program.py --result_cache_dir=dataset/tmp --candidate_cache_dir=dataset/to_measure_programs/a6000/450115668279416192__fused_nn_conv2d_add --target=nvidia/nvidia-a100
+#python measure_program.py --result_cache_dir=dataset/tmp --candidate_cache_dir=/home/hwhu/ctlm/ctlm/dataset/to_measure_programs/v100/34288885545025224__fused_nn_conv2d_add_nn_relu --target=nvidia/nvidia-a100

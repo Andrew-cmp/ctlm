@@ -1,23 +1,18 @@
 import argparse
 import glob
 import os
-import sys
+import tvm
 from tqdm import tqdm  # type: ignore
 from tvm import meta_schedule as ms
 from tvm.target import Target
 import logging
 import shutil
 import json
+#只针对单个task测量，并且将cuda代码保存到新的文件夹中
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--result_error_threshold", type=int, help="Please provide the full path to the candidates.",default=1000
-    )
-    parser.add_argument(
         "--candidate_cache_dir", type=str, help="Please provide the full path to the candidates."
-    )
-    parser.add_argument(
-        "--moved_dir", type=str, help="Please provide the full path that will store the failed tasks."
     )
     parser.add_argument(
         "--result_cache_dir", type=str, help="Please provide the full path to the result database."
@@ -65,17 +60,27 @@ def _parse_args():
         help="The batch size of candidates sent to builder and runner each time.",
     )
     return parser.parse_args()
-class MPSError(Exception):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-def rm_dir(dirs,path):
-    for dir in dirs:
-        tmp = os.path.join(path,dir)
-        shutil.rmtree(tmp)
+# from tvm.contrib import nvcc
+# @tvm.register_func("tvm_callback_cuda_compile", override=True)
+# def tvm_callback_cuda_compile(code):
+#     ptx = nvcc.compile_cuda(code)
+#     print("this is override tvm_callback_cuda_compile")
+#     with open("test_shared_dyn.ptx",'wb')as f:
+#         f.write(ptx)
+#     return ptx
 
+# pylint: disable=too-many-locals
 def add_candidates_func_attr(candidates):
-
+    # print(f"len(candidates):{len(candidates)}")
+    # print("*"*30)
+    # print(f"sch0:{candidates[0].sch}")
+    # print("*"*30)
+    # print(f"sch1:{candidates[1].sch}")
+    # print("*"*30)
+    # print(f"mod0:{candidates[0].sch.mod}")
+    # print("*"*30)
+    # print(f"mod1:{candidates[1].sch.mod}")
+    # print("*"*30)
     file_name = os.path.basename(args.candidate_cache_dir)
     register_path = "/home/hwhu/ctlm/ctlm/dataset/measure_register/measured/a100_100_100_100"
     register_path = os.path.join(register_path,file_name)
@@ -95,9 +100,9 @@ def add_candidates_func_attr(candidates):
         func_with_attr = func.with_attr({"register": register})
         candidate.sch.mod.update_func(candidate.sch.mod.get_global_var("main"), func_with_attr)
         #input("continue...")
-        
-# pylint: disable=too-many-locals
-def measure_candidates(database, builder, runner, task_record):
+    return candidates
+
+def measure_candidates(database, builder, runner, task_record,new_dir):
     """Send the candidates to builder and runner for distributed measurement,
     and save the results in a new json database.
 
@@ -120,23 +125,35 @@ def measure_candidates(database, builder, runner, task_record):
         return
     for record in tuning_records:
         candidates.append(record.as_measure_candidate())
-    with ms.Profiler() as profiler:
-        for idx in range(0, len(candidates), args.batch_size):
-            batch_candidates = candidates[idx : idx + args.batch_size]
-            task_record._set_measure_candidates(batch_candidates)  # pylint: disable=protected-access
-            print(len(task_record.measure_candidates))
-            with ms.Profiler.timeit("build"):
-                task_record._send_to_builder(builder)  # pylint: disable=protected-access
-            with ms.Profiler.timeit("run"):
-                task_record._send_to_runner(runner)  # pylint: disable=protected-access
-                batch_runner_results = task_record._join()  # pylint: disable=protected-access
-            runner_results.extend(batch_runner_results)
-            for i, result in enumerate(task_record.builder_results):
-                if result.error_msg is None:
-                    ms.utils.remove_build_dir(result.artifact_path)
-                else:
-                    build_fail_indices.append(i + idx)
-            task_record._clear_measure_state(batch_runner_results)  # pylint: disable=protected-access
+    #candidates = add_candidates_func_attr(candidates)
+    # print(f"mod0:{candidates[0].sch.mod}")
+    # print("*"*30)
+    # print(f"mod1:{candidates[1].sch.mod}")
+    # input("continue...")
+    
+    # with ms.Profiler() as profiler:
+    #     for idx in range(0, len(candidates), args.batch_size):
+    #         batch_candidates = candidates[idx : idx + args.batch_size]
+    #         task_record._set_measure_candidates(batch_candidates)  # pylint: disable=protected-access
+    #         with ms.Profiler.timeit("build"):
+    #             task_record._send_to_builder(builder)  # pylint: disable=protected-access
+    #         with ms.Profiler.timeit("run"):
+    #             task_record._send_to_runner(runner)  # pylint: disable=protected-access
+    #             batch_runner_results = task_record._join()  # pylint: disable=protected-access
+    #         runner_results.extend(batch_runner_results)
+    #         for i, result in enumerate(task_record.builder_results):
+    #             if result.error_msg is None:
+    #                 #print(result.artifact_path)
+    #                 # artifact_dir = os.path.dirname(result.artifact_path)
+    #                 # src = os.path.join(artifact_dir,"cuda_code.cu")
+    #                 # dst_dir = os.path.join(new_dir,"cuda_code")
+    #                 # dst = os.path.join(dst_dir,f"{i+idx}.cu")
+    #                 # shutil.move(src,dst)
+    #                 ms.utils.remove_build_dir(result.artifact_path)
+    #                 print(result.error_msg)
+    #             else:
+    #                 build_fail_indices.append(i + idx)
+    #         task_record._clear_measure_state(batch_runner_results)  # pylint: disable=protected-access
 
     model_name, workload_name = database.path_workload.split("/")[-2:]
     record_name = database.path_tuning_record.split("/")[-1]
@@ -146,9 +163,6 @@ def measure_candidates(database, builder, runner, task_record):
     )
     workload = tuning_records[0].workload
     new_database.commit_workload(workload.mod)
-    result_error_threshold = args.result_error_threshold
-    result_error_num = 0
-    result_error_flag = 0
     for i, (record, result) in enumerate(zip(tuning_records, runner_results)):
         if result.error_msg is None:
             new_database.commit_tuning_record(
@@ -159,18 +173,8 @@ def measure_candidates(database, builder, runner, task_record):
                     target=Target(args.target),
                 )
             )
-            result_error_flag = 0
-            result_error_num = 0
         else:
             run_fail_indices.append(i)
-            if result_error_flag == 1:
-                result_error_num += 1
-            elif result_error_flag == 0:
-                result_error_num = 1
-                result_error_flag = 1
-        if result_error_num >= result_error_threshold:
-            raise MPSError("error")
-            
     fail_indices_name = workload_name.replace("_workload.json", "_failed_indices.txt")
     with open(
         os.path.join(args.result_cache_dir, model_name, fail_indices_name), "w", encoding="utf8"
@@ -178,7 +182,6 @@ def measure_candidates(database, builder, runner, task_record):
         file.write(" ".join([str(n) for n in run_fail_indices]))
     print(
         f"Builder time: {profiler.get()['build']}, Runner time: {profiler.get()['run']}\n\
-            Build model is {model_name}\n\
             Failed number of builds: {len(build_fail_indices)},\
             Failed number of runs: {len(run_fail_indices)}"
     )
@@ -191,58 +194,36 @@ def main():
     logging.basicConfig(level=logging.INFO)
     
 
-    builder = ms.builder.LocalBuilder(timeout_sec=30)
-    runner = ms.runner.LocalRunner(timeout_sec=10)
+    builder = ms.builder.LocalBuilder(timeout_sec=300)
+    runner = ms.runner.LocalRunner(timeout_sec=100)
+    model_name = args.candidate_cache_dir.split("/")[-1]
     if not os.path.isdir(args.candidate_cache_dir):
         raise Exception("Please provide a correct candidate cache dir.")
+    new_dir = os.path.join(args.result_cache_dir, model_name)
     try:
-        os.makedirs(args.result_cache_dir, exist_ok=True)
+        os.makedirs(new_dir, exist_ok=True)
     except OSError:
         print(f"Directory {args.result_cache_dir} cannot be created successfully.")
-    # 这行代码的作用是查找指定目录下的所有子目录或文件，并将其路径存储到 model_dirs 变量中。
-    model_dirs = glob.glob(os.path.join(args.candidate_cache_dir, "*"))
-
+    new_cuda_dir = os.path.join(new_dir, "cuda_code")
+    try:
+        os.makedirs(new_cuda_dir, exist_ok=True)
+    except OSError:
+        print(f"Directory {new_cuda_dir} cannot be created successfully.")
+    
+    new_ptx_dir = os.path.join(new_dir, "ptx_code")
+    try:
+        os.makedirs(new_ptx_dir, exist_ok=True)
+    except OSError:
+        print(f"Directory {new_ptx_dir} cannot be created successfully.")
+         
+        
     task_record = ms.task_scheduler.task_scheduler.TaskRecord(
         ms.TuneContext(target=Target(args.target)))
     
-    
-    model_handled_dirs = []
-    for model_dir in tqdm(model_dirs):
-        # such as '14729483509063283358__fused_nn_contrib_conv2d_winograd_without_weight_transform_add_add_nn_relu'
-        model_name = model_dir.split("/")[-1]
-        new_dir = os.path.join(args.result_cache_dir, model_name)
-        if os.path.isdir(new_dir):
-            recods_path = os.path.join(new_dir, 'database_tuning_record.json')
-            if os.path.exists(recods_path):
-                with open(recods_path, 'r') as f:
-                    lines = [line for line in f.read().strip().split('\n') if line]
-                    if len(lines) > 0:
-                        continue
-        else:
-            os.makedirs(new_dir)
-        database = ms.database.JSONDatabase(work_dir=model_dir)
-        try:
-            measure_candidates(database, builder, runner, task_record)
-        except MPSError as e:
-            try:
-                rm_dir([model_name],args.result_cache_dir)             #移除在result_cache_dir中已经创建了的task的dir
-                rm_dir(model_handled_dirs,args.candidate_cache_dir)    #移除candidate_cache_dir中已经测量过的task
-            except FileNotFoundError:
-                print(model_handled_dirs)
-                print(f"model name is {model_name}")
-            print(f"Failed task is {model_name}")
-            source_dir = os.path.join(args.candidate_cache_dir,model_name)
-            destination_dir = os.path.join(args.moved_dir,model_name)
-            shutil.move(source_dir, destination_dir)
-            print(f"Failed task is removed to moved dir")
-            sys.exit(1)
-        else:
-            model_handled_dirs.append(model_name)
-            
+    database = ms.database.JSONDatabase(work_dir=args.candidate_cache_dir)
+    measure_candidates(database, builder, runner, task_record,new_dir)
+
 
 if __name__ == "__main__":
     main()
-# CUDA_VISIBLE_DEVICES=3 python measure_programs.py \
-# --batch_size=64 --target=nvidia/nvidia-a6000 \
-# --candidate_cache_dir=gen_data/v100_gen_train/gen_train.json \
-# --result_cache_dir=gen_data/measure_data_v100/finetuning_0.json
+#python measure_program.py --result_cache_dir=dataset/tmp --candidate_cache_dir=/home/hwhu/ctlm/ctlm/dataset/to_measure_programs/v100/34288885545025224__fused_nn_conv2d_add_nn_relu --target=nvidia/nvidia-a100

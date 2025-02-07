@@ -41,11 +41,14 @@ namespace tvm {
 namespace codegen {
 
 runtime::Module Build(IRModule mod, Target target) {
+  // int call_time = 0;
+  // call_time++;
   if (transform::PassContext::Current()
           ->GetConfig<Bool>("tir.disable_assert", Bool(false))
           .value()) {
     mod = tir::transform::SkipAssert()(mod);
   }
+  // std::cout<<"in codegen.cc mod:"<<std::endl<<"call_time:"<<call_time<<std::endl<<mod<<std::endl;
   auto target_attr_map = tvm::TargetKind::GetAttrMap<FTVMTIRToRuntime>("TIRToRuntime");
   if (target_attr_map.count(target->kind)) {
     return target_attr_map[target->kind](mod, target);
@@ -55,6 +58,9 @@ runtime::Module Build(IRModule mod, Target target) {
   std::string build_f_name = "target.build." + target->kind->name;
   const PackedFunc* bf = runtime::Registry::Get(build_f_name);
   ICHECK(bf != nullptr) << build_f_name << " is not enabled";
+  
+  // std::cout<<"in codegen.cc target:"<<std::endl<<"call_time:"<<call_time<<std::endl<<target<<std::endl;
+  // std::cout<<"in codegen.cc before build mod:"<<std::endl<<"call_time:"<<call_time<<std::endl<<mod<<std::endl;
   return (*bf)(mod, target);
 }
 

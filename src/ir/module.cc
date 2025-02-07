@@ -268,7 +268,7 @@ void IRModuleNode::Remove(const GlobalVar& var) {
   auto gvar_node = global_var_map_.CopyOnWrite();
   gvar_node->erase(var->name_hint);
 }
-
+///return的是值还是引用呢
 BaseFunc IRModuleNode::Lookup(const GlobalVar& var) const {
   auto it = functions.find(var);
   ICHECK(it != functions.end()) << "There is no definition of " << var;

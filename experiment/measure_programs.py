@@ -8,10 +8,11 @@ from tvm.target import Target
 import logging
 import shutil
 import json
+import math
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--result_error_threshold", type=int, help="Please provide the full path to the candidates.",default=1000
+        "--result_error_threshold", type=int, help="this vaule is related to mps tool.",default=1000
     )
     parser.add_argument(
         "--candidate_cache_dir", type=str, help="Please provide the full path to the candidates."
@@ -64,6 +65,12 @@ def _parse_args():
         default=64,
         help="The batch size of candidates sent to builder and runner each time.",
     )
+    parser.add_argument(
+        "--reg_times",
+        type=int,
+        default=-1,
+        help="the value that limit usage of reg when start thread",
+    )
     return parser.parse_args()
 class MPSError(Exception):
     def __init__(self, message):
@@ -74,9 +81,8 @@ def rm_dir(dirs,path):
         tmp = os.path.join(path,dir)
         shutil.rmtree(tmp)
 
-def add_candidates_func_attr(candidates):
-
-    file_name = os.path.basename(args.candidate_cache_dir)
+def add_candidates_func_attr(candidates,model_name):
+    file_name = model_name
     register_path = "/home/hwhu/ctlm/ctlm/dataset/measure_register/measured/a100_100_100_100"
     register_path = os.path.join(register_path,file_name)
     register_json_path = os.path.join(register_path,"register.json")
@@ -92,11 +98,12 @@ def add_candidates_func_attr(candidates):
         func = candidate.sch.mod["main"]
         name = f"{i}.cu"
         register = registers_dict[name] 
-        func_with_attr = func.with_attr({"register": register})
+        register_limitation = math.ceil(register/args.reg_times)
+        func_with_attr = func.with_attr({"register": register_limitation})
         candidate.sch.mod.update_func(candidate.sch.mod.get_global_var("main"), func_with_attr)
         #input("continue...")
-        
-# pylint: disable=too-many-locals
+    return candidates
+
 def measure_candidates(database, builder, runner, task_record):
     """Send the candidates to builder and runner for distributed measurement,
     and save the results in a new json database.
@@ -120,11 +127,17 @@ def measure_candidates(database, builder, runner, task_record):
         return
     for record in tuning_records:
         candidates.append(record.as_measure_candidate())
+    model_name, workload_name = database.path_workload.split("/")[-2:]
+    record_name = database.path_tuning_record.split("/")[-1]
+    candidates = add_candidates_func_attr(candidates,model_name)
+    # print(f"mod0:{candidates[-1].sch.mod}")
+    # print("*"*30)
+    # print(f"mod1:{candidates[-2].sch.mod}")
+    # input("continue...")
     with ms.Profiler() as profiler:
         for idx in range(0, len(candidates), args.batch_size):
             batch_candidates = candidates[idx : idx + args.batch_size]
             task_record._set_measure_candidates(batch_candidates)  # pylint: disable=protected-access
-            print(len(task_record.measure_candidates))
             with ms.Profiler.timeit("build"):
                 task_record._send_to_builder(builder)  # pylint: disable=protected-access
             with ms.Profiler.timeit("run"):
@@ -138,8 +151,6 @@ def measure_candidates(database, builder, runner, task_record):
                     build_fail_indices.append(i + idx)
             task_record._clear_measure_state(batch_runner_results)  # pylint: disable=protected-access
 
-    model_name, workload_name = database.path_workload.split("/")[-2:]
-    record_name = database.path_tuning_record.split("/")[-1]
     new_database = ms.database.JSONDatabase(
         path_workload=os.path.join(args.result_cache_dir, model_name, workload_name),
         path_tuning_record=os.path.join(args.result_cache_dir, model_name, record_name),
@@ -172,10 +183,15 @@ def measure_candidates(database, builder, runner, task_record):
             raise MPSError("error")
             
     fail_indices_name = workload_name.replace("_workload.json", "_failed_indices.txt")
+    build_fail_indices_name = workload_name.replace("_workload.json", "_build_failed_indices.txt")
     with open(
         os.path.join(args.result_cache_dir, model_name, fail_indices_name), "w", encoding="utf8"
     ) as file:
         file.write(" ".join([str(n) for n in run_fail_indices]))
+    with open(
+        os.path.join(args.result_cache_dir, model_name, build_fail_indices_name), "w", encoding="utf8"
+    ) as file:
+        file.write(" ".join([str(n) for n in build_fail_indices]))
     print(
         f"Builder time: {profiler.get()['build']}, Runner time: {profiler.get()['run']}\n\
             Build model is {model_name}\n\
@@ -189,10 +205,8 @@ args = _parse_args()  # pylint: disable=invalid-name
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    
-
-    builder = ms.builder.LocalBuilder(timeout_sec=30)
-    runner = ms.runner.LocalRunner(timeout_sec=10)
+    builder = ms.builder.LocalBuilder(timeout_sec=3000)
+    runner = ms.runner.LocalRunner(timeout_sec=100)
     if not os.path.isdir(args.candidate_cache_dir):
         raise Exception("Please provide a correct candidate cache dir.")
     try:
@@ -242,7 +256,10 @@ def main():
 
 if __name__ == "__main__":
     main()
-# CUDA_VISIBLE_DEVICES=3 python measure_programs.py \
-# --batch_size=64 --target=nvidia/nvidia-a6000 \
-# --candidate_cache_dir=gen_data/v100_gen_train/gen_train.json \
-# --result_cache_dir=gen_data/measure_data_v100/finetuning_0.json
+# python measure_programs.py \
+# --result_cache_dir=dataset/tmp \
+# --candidate_cache_dir=/home/hwhu/ctlm/ctlm/dataset/to_measure_programs/v100 \
+# --target=nvidia/nvidia-a100 \
+# --reg_times=2 \
+# --result_error_threshold=5 \
+# --moved_dir=dataset/tmp 

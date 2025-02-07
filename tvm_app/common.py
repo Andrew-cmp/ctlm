@@ -10,22 +10,34 @@ from tvm import relay
 from tvm.meta_schedule.space_generator import PostOrderApply
 import tvm.tir.tensor_intrin
 from tvm.meta_schedule.search_strategy import MeasureCandidate
+import copy
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-def save_sch_mod(sch: tvm.tir.Schedule, 
+def save_sch_mod_cuda_code_interact(sch: tvm.tir.Schedule, 
                  *,
                  old_mod_file: str = '/home/hwhu/ctlm/tvm_app/trash.print/old_mod_file.py', 
                  new_mod_file: str = '/home/hwhu/ctlm/tvm_app/trash.print/new_mod_file.py',
                  ):
+    
     if os.path.exists(old_mod_file):
         os.remove(old_mod_file)
-    
     if os.path.exists(new_mod_file):
         os.rename(new_mod_file, old_mod_file)
-    
     with open(new_mod_file, 'w') as f:
         f.write(str(sch.mod))
-
+    
+    old_cuda_file = os.path.join(os.path.dirname(old_mod_file), 'old_cuda_code.cu')
+    new_cuda_file = os.path.join(os.path.dirname(new_mod_file), 'new_cuda_code.cu')
+    if os.path.exists(old_cuda_file):
+        os.remove(old_cuda_file)
+    if os.path.exists(new_cuda_file):
+        os.rename(new_cuda_file, old_cuda_file)
+    try:
+        write_cuda_code(sch.mod, new_cuda_file)
+    except:
+        with open(new_cuda_file, 'w') as f:
+            f.write("cuda emit failed")
+    input(f"lastest trace uesd and cuda code write,  Press Enter to continue...")
 def build_check_evaluate(sch: tvm.tir.Schedule, 
                     check_comp: Callable,
                     is_build: bool = True,
@@ -34,25 +46,26 @@ def build_check_evaluate(sch: tvm.tir.Schedule,
                     is_evaluate: bool = True,
                     target="nvidia/nvidia-a100",
                     func_name="main"):
-    if is_build:
-        lib = tvm.build(sch.mod, target=target)
-        print("build success ...")
-        dev = tvm.cuda() if 'nvidia' in target else tvm.cpu()
-        args_info:List[ms.arg_info.TensorInfo]  = ms.arg_info.ArgInfo.from_entry_func(sch.mod)
-        args_info_json = [arg_info.as_json() for arg_info in args_info]
-        input_nps = [np.random.random(aij[2]).astype(aij[1]) for aij in args_info_json]
-        input_nds = [tvm.nd.array(inp, device=dev) for inp in input_nps]
-        lib(*input_nds)
-        print("run success")
+
+    #if is_build:
+    lib = tvm.build(sch.mod, target=target)
+    print("build success ...")
+    dev = tvm.cuda() if 'nvidia' in target else tvm.cpu()
+    args_info:List[ms.arg_info.TensorInfo]  = ms.arg_info.ArgInfo.from_entry_func(sch.mod)
+    args_info_json = [arg_info.as_json() for arg_info in args_info]
+    input_nps = [np.random.random(aij[2]).astype(aij[1]) for aij in args_info_json]
+    input_nds = [tvm.nd.array(inp, device=dev) for inp in input_nps]
+    lib(*input_nds)
+    print("run success")
         
     if is_write_src:
-        with open('/home/hwhu/ctlm/tvm_app/result_tir.h','w') as f:
+        with open('/home/houhw/tvm_learn/tvm_app/result_tir.h','w') as f:
             f.write(str(sch.mod))
         if "nvidia" in target:
-            with open('/home/hwhu/ctlm/tvm_app/result.h','w') as f:
+            with open('/home/houhw/tvm_learn/tvm_app/result.h','w') as f:
                 f.write(lib.imported_modules[0].get_source())
         else:
-            with open('/home/hwhu/ctlm/tvm_app/result.h','w') as f:
+            with open('/home/houhw/tvm_learn/tvm_app/result.h','w') as f:
                 f.write(lib.get_source("asm"))
         print("write src success ...")
     
@@ -83,8 +96,11 @@ def avx512_vnni_test_build(states: List[tvm.tir.Schedule], target):
     return result, err_cnt
 
 
-def generate_candidates(mod, sch_rules, postprocs, mutator, target, number=1):
-    generator = PostOrderApply(sch_rules=sch_rules, postprocs=postprocs, mutator_probs=mutator)
+def generate_candidates(mod, target,sch_rules = None, postprocs = None, mutator = None, number=1):
+    if(postprocs !=None and mutator !=None and sch_rules != None ):
+        generator = PostOrderApply(sch_rules=sch_rules, postprocs=postprocs, mutator_probs=mutator)
+    else :
+         generator = PostOrderApply()
     strategy = ms.search_strategy.EvolutionarySearch(init_measured_ratio=0.0,
                                                      genetic_num_iters=1,)
     sample_init_population = tvm.get_global_func(
@@ -235,3 +251,11 @@ def get_BatchMatmul(input_shape, input_dtype, weight_shape, weight_dtype, out_dt
                 or "dense" in task.task_name:
                     print(task.task_name)
                     return task.dispatched[0]
+def write_cuda_code(mod,path=None):
+    build_mod = tvm.build(mod, target="cuda")
+    if path is not None:
+        with open(path, 'w') as f:
+            f.write(build_mod.imported_modules[0].get_source())
+    else:
+        with open('/home/houhw/tvm_learn/tvm_app/trash.print/cuda_code','w') as f:
+            f.write(build_mod.imported_modules[0].get_source())   

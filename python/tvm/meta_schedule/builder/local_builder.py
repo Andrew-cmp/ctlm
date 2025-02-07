@@ -262,6 +262,8 @@ def default_build(mod: IRModule, target: Target, _params: Optional[Dict[str, NDA
 
     # pylint: enable=import-outside-toplevel
     mod = RemoveWeightLayoutRewriteBlock(skip_ndarray_rewrite=True)(mod)
+    # print(mod)
+    # input("continue in default_build")
     return tvm_build(mod, target=target)
 
 
@@ -280,13 +282,13 @@ def default_export(mod: Module) -> str:
         The path to the exported Module.
     """
     from tvm.contrib.tar import tar  # pylint: disable=import-outside-toplevel
-    #artifact_base_dir="/home/hwhu/ctlm/experiment/measure_data/tmp"
-    #artifact_path = os.path.join(tempfile.mkdtemp(dir=artifact_base_dir), "tvm_tmp_mod." + tar.output_format)
-    #mod.export_library(artifact_path, tar)
-    #hold_path = os.path.dirname(artifact_path)
-    #cuda_code_path = os.path.join(hold_path,"cuda_code.cu")
-    #ptx_code_path = os.path.join(hold_path,"ptx_code.ptx")
-    #with open(cuda_code_path,"w") as f:
+    # artifact_base_dir="/home/hwhu/ctlm/experiment/trash.print/tmpcuda"
+    # artifact_path = os.path.join(tempfile.mkdtemp(dir=artifact_base_dir), "tvm_tmp_mod." + tar.output_format)
+    # mod.export_library(artifact_path, tar)
+    # hold_path = os.path.dirname(artifact_path)
+    # cuda_code_path = os.path.join(hold_path,"cuda_code.cu")
+    # #ptx_code_path = os.path.join(hold_path,"ptx_code.ptx")
+    # with open(cuda_code_path,"w") as f:
     #    f.write(mod.imported_modules[0].get_source())
     
     

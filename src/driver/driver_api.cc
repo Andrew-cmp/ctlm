@@ -470,9 +470,28 @@ runtime::Module TIRToRuntime(const Map<Target, IRModule>& inputs_arg,
     if (it.second.defined()) {
       const Target& target = it.first;
       const IRModule& ir_module = it.second;
+
+      //得到main函数里的register属性
+      tvm::tir::PrimFunc prim_func = Downcast<tvm::tir::PrimFunc>(ir_module->Lookup("main"));
+      auto attr = prim_func->GetAttr<Integer>("register");
+      // std::cout<<"in driver_api target:"<<target<<std::endl;
+      // std::cout<<"in driver_api ir_module:"<<ir_module<<std::endl;
       auto pair = SplitMixedModule(ir_module, target, target_host);
+      //就在这，原本的irmod即为输入的irmod，这里拆成了两个irmodl，一个是host侧即cpu端，保留了func的属性，另一个是device端即GPU端，没有继承原本func的属性。
+
       auto& host_mod = pair.first;
+      // std::cout<<"in driver_api host_mod"<<host_mod<<std::endl;
+
       auto& device_mod = pair.second;
+      //为device_mod设置属性
+      //这里是copy赋值
+      tvm::tir::PrimFunc prim_func_device = Downcast<tvm::tir::PrimFunc>(device_mod->Lookup("main_kernel0"));
+      // std::cout<<"in driver_api device_mod"<<device_mod<<std::endl;
+      auto prim_func_device_with_attr = WithAttr(std::move(prim_func_device),"register",attr);
+      // std::cout<<"in driver_api prim_func_device_with_attr"<<prim_func_device_with_attr<<std::endl;
+      device_mod->Update(device_mod->GetGlobalVar("main_kernel0"),std::move(prim_func_device_with_attr));
+
+      // std::cout<<"in driver_api device_mod"<<device_mod<<std::endl;
 
       ICHECK(host_mod.defined()) << "The split host module must be defined";
 
@@ -497,6 +516,7 @@ runtime::Module TIRToRuntime(const Map<Target, IRModule>& inputs_arg,
     }
   }
 
+  //std::cout<<"in driver_api mhost_all"<<mhost_all<<std::endl;
   runtime::Module mhost = codegen::Build(mhost_all, target_host);
   for (const auto& it : device_modules) {
     if (it.operator->()) {

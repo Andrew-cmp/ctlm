@@ -9,10 +9,11 @@ import logging
 import shutil
 import tvm
 import json
+import math
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--result_error_threshold", type=int, help="Please provide the full path to the candidates.",default=1000
+        "--result_error_threshold", type=int, help="this vaule is related to mps tool.",default=1000
     )
     parser.add_argument(
         "--candidate_cache_dir", type=str, help="Please provide the full path to the candidates."
@@ -65,6 +66,12 @@ def _parse_args():
         default=64,
         help="The batch size of candidates sent to builder and runner each time.",
     )
+    parser.add_argument(
+        "--reg_times",
+        type=int,
+        default=-1,
+        help="the value that limit usage of reg when start thread",
+    )
     return parser.parse_args()
 class MPSError(Exception):
     def __init__(self, message):
@@ -74,13 +81,35 @@ def rm_dir(dirs,path):
     for dir in dirs:
         tmp = os.path.join(path,dir)
         shutil.rmtree(tmp)
-@tvm._ffi.register_func("tvm_codegen_maxreg",override=True)
-def tvm_codegen_maxreg():
-    # with open("1.json",'w') as f:
-    #     json.load("1.json")
-    i = -1
-    return i
-# pylint: disable=too-many-locals
+# @tvm._ffi.register_func("tvm_codegen_maxreg",override=True)
+# def tvm_codegen_maxreg():
+#     # with open("1.json",'w') as f:
+#     #     json.load("1.json")
+#     i = -1
+#     return i
+def add_candidates_func_attr(candidates,model_name):
+    file_name = model_name
+    register_path = "/home/hwhu/ctlm/ctlm/dataset/measure_register/measured/a100_100_100_100"
+    register_path = os.path.join(register_path,file_name)
+    register_json_path = os.path.join(register_path,"register.json")
+    with open(register_json_path,"r") as f:
+        registers = json.load(f)
+    registers_dict = dict()
+    for register in registers:
+        registers_dict.update(register)
+   
+    #print(registers)
+    #print(registers_dict)
+    for i, candidate in enumerate(candidates):
+        func = candidate.sch.mod["main"]
+        name = f"{i}.cu"
+        register = registers_dict[name] 
+        register_limitation = math.ceil(register/args.reg_times)
+        func_with_attr = func.with_attr({"register": register_limitation})
+        candidate.sch.mod.update_func(candidate.sch.mod.get_global_var("main"), func_with_attr)
+        #input("continue...")
+    return candidates
+
 def measure_candidates(database, builder, runner, task_record):
     """Send the candidates to builder and runner for distributed measurement,
     and save the results in a new json database.
@@ -97,13 +126,16 @@ def measure_candidates(database, builder, runner, task_record):
     Returns
     -------
     None
-    """ 
+    """
     candidates, runner_results, build_fail_indices, run_fail_indices = [], [], [], []
     tuning_records = database.get_all_tuning_records()
     if len(tuning_records) == 0:
         return
     for record in tuning_records:
         candidates.append(record.as_measure_candidate())
+    model_name, workload_name = database.path_workload.split("/")[-2:]
+    record_name = database.path_tuning_record.split("/")[-1]
+    candidates = add_candidates_func_attr(candidates,model_name)
     with ms.Profiler() as profiler:
         for idx in range(0, len(candidates), args.batch_size):
             batch_candidates = candidates[idx : idx + args.batch_size]
@@ -126,8 +158,6 @@ def measure_candidates(database, builder, runner, task_record):
                     build_fail_indices.append(i + idx)
             task_record._clear_measure_state(batch_runner_results)  # pylint: disable=protected-access
 
-    model_name, workload_name = database.path_workload.split("/")[-2:]
-    record_name = database.path_tuning_record.split("/")[-1]
     new_database = ms.database.JSONDatabase(
         path_workload=os.path.join(args.result_cache_dir, model_name, workload_name),
         path_tuning_record=os.path.join(args.result_cache_dir, model_name, record_name),
@@ -233,7 +263,10 @@ def main():
 
 if __name__ == "__main__":
     main()
-# CUDA_VISIBLE_DEVICES=3 python measure_programs.py \
-# --batch_size=64 --target=nvidia/nvidia-a6000 \
-# --candidate_cache_dir=gen_data/v100_gen_train/gen_train.json \
-# --result_cache_dir=gen_data/measure_data_v100/finetuning_0.json
+# python measure_programs.py \
+# --result_cache_dir=dataset/tmp \
+# --candidate_cache_dir=/home/hwhu/ctlm/ctlm/dataset/to_measure_programs/v100 \
+# --target=nvidia/nvidia-a100 \
+# --reg_times=2 \
+# --result_error_threshold=5 \
+# --moved_dir=dataset/tmp 

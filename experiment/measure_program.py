@@ -70,7 +70,7 @@ def _parse_args():
 #     return ptx
 
 # pylint: disable=too-many-locals
-def add_candidates_func_attr(candidates):
+def add_candidates_func_attr(candidates,model_name):
     # print(f"len(candidates):{len(candidates)}")
     # print("*"*30)
     # print(f"sch0:{candidates[0].sch}")
@@ -81,7 +81,7 @@ def add_candidates_func_attr(candidates):
     # print("*"*30)
     # print(f"mod1:{candidates[1].sch.mod}")
     # print("*"*30)
-    file_name = os.path.basename(args.candidate_cache_dir)
+    file_name = model_name
     register_path = "/home/hwhu/ctlm/ctlm/dataset/measure_register/measured/a100_100_100_100"
     register_path = os.path.join(register_path,file_name)
     register_json_path = os.path.join(register_path,"register.json")
@@ -102,7 +102,7 @@ def add_candidates_func_attr(candidates):
         #input("continue...")
     return candidates
 
-def measure_candidates(database, builder, runner, task_record,new_dir):
+def measure_candidates(database, builder, runner, task_record):
     """Send the candidates to builder and runner for distributed measurement,
     and save the results in a new json database.
 
@@ -125,11 +125,13 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
         return
     for record in tuning_records:
         candidates.append(record.as_measure_candidate())
-    candidates = add_candidates_func_attr(candidates)
-    # print(f"mod0:{candidates[0].sch.mod}")
+    model_name, workload_name = database.path_workload.split("/")[-2:]
+    record_name = database.path_tuning_record.split("/")[-1]
+    candidates = add_candidates_func_attr(candidates,model_name)
+    # print(f"mod0:{candidates[-1].sch.mod}")
     # print("*"*30)
-    # print(f"mod1:{candidates[1].sch.mod}")
-    input("continue...")
+    # print(f"mod1:{candidates[-2].sch.mod}")
+    # input("continue...")
     
     with ms.Profiler() as profiler:
         for idx in range(0, len(candidates), args.batch_size):
@@ -143,20 +145,19 @@ def measure_candidates(database, builder, runner, task_record,new_dir):
             runner_results.extend(batch_runner_results)
             for i, result in enumerate(task_record.builder_results):
                 if result.error_msg is None:
-                    #print(result.artifact_path)
+                    # print(result.artifact_path)
                     # artifact_dir = os.path.dirname(result.artifact_path)
                     # src = os.path.join(artifact_dir,"cuda_code.cu")
                     # dst_dir = os.path.join(new_dir,"cuda_code")
                     # dst = os.path.join(dst_dir,f"{i+idx}.cu")
                     # shutil.move(src,dst)
                     ms.utils.remove_build_dir(result.artifact_path)
-                    print(result.error_msg)
                 else:
                     build_fail_indices.append(i + idx)
+                    print(result.error_msg)
+                    input("reading error")
             task_record._clear_measure_state(batch_runner_results)  # pylint: disable=protected-access
 
-    model_name, workload_name = database.path_workload.split("/")[-2:]
-    record_name = database.path_tuning_record.split("/")[-1]
     new_database = ms.database.JSONDatabase(
         path_workload=os.path.join(args.result_cache_dir, model_name, workload_name),
         path_tuning_record=os.path.join(args.result_cache_dir, model_name, record_name),

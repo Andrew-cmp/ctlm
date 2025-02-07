@@ -48,6 +48,13 @@ TaskRecord::TaskRecord(TuneContext ctx) {
 
 void SetMeasureCandidates(TaskRecordNode* self, const Array<MeasureCandidate>& candidates) {
   self->measure_candidates = candidates;
+  // for (const MeasureCandidate& candidate : candidates) {
+  //   auto mod = candidate->sch->mod();
+  //   tvm::tir::PrimFunc prim_func = Downcast<tvm::tir::PrimFunc>(mod->Lookup("main"));
+  //   auto attr = prim_func.get()->attrs;
+  //   std::cout << "attr:"<<attr<<std::endl;
+  // }
+
 }
 
 void SendToBuilder(TaskRecordNode* self, const Builder& builder) {
@@ -59,10 +66,13 @@ void SendToBuilder(TaskRecordNode* self, const Builder& builder) {
   for (const MeasureCandidate& candidate : candidates) {
     inputs.push_back(BuilderInput(candidate->sch->mod(), target));
 
-    auto mod = candidate->sch->mod();
-    tvm::tir::PrimFunc prim_func = Downcast<tvm::tir::PrimFunc>(mod->Lookup("main"));
-    auto attr = prim_func.get()->attrs;
-    std::cout << "attr:"<<attr<<std::endl;
+    // auto mod = candidate->sch->mod();
+    // tvm::tir::PrimFunc prim_func = Downcast<tvm::tir::PrimFunc>(mod->Lookup("main"));
+    // auto attr = prim_func.get()->attrs;
+    // std::cout << "attr:"<<attr<<std::endl;
+    // int stop;
+    // std::cout<<"in SendToBuilder continue..."<<std::endl;
+    // std::cin >> stop ;
   }
   self->builder_results = builder->Build(inputs);
 }

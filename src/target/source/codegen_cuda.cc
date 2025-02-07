@@ -98,11 +98,12 @@ void CodeGenCUDA::PrintExtraAttrs(const PrimFunc& f) {
   // }
   // else{
   // }
-  auto attr = f.get()->attrs;
-  auto register_num = attr.GetAttr<Integer>("register");
-  std::cout<<"attr:"<<attr<<std::endl;
-  std::cout<< "register: "<<register_num<<std::endl;
-
+  
+  auto register_num = f->GetAttr<Integer>("register").value_or(-1).IntValue();;
+  //std::cout<< "register: "<<register_num<<std::endl;
+  if(register_num > 0){
+    stream << " __maxnreg__(" << register_num << ")";
+  }
 }
 
 std::string CodeGenCUDA::Finish() {

@@ -234,6 +234,8 @@ def build(
         input_mod = lower(inputs, name=name)
     elif isinstance(inputs, tvm.IRModule):
         input_mod = lower(inputs)
+        # print("after lower:")
+        # input_mod.show()
     elif not isinstance(inputs, (dict, container.Map)):
         raise ValueError(
             f"Inputs must be te.Schedule, IRModule, PrimFunc, "
@@ -257,6 +259,9 @@ def build(
         if not isinstance(mod, tvm.IRModule):
             raise ValueError("inputs must be Schedule, IRModule," "or dict of str to IRModule.")
         annotated_mods[tar] = mod.with_attr("runtime", runtime)
+        # 这里这个方法是给irmodule加属性的
+        # print("annotated_mods")
+        # annotated_mods[tar].show()
 
     # TODO(mbs): Both CompilationConfig and TIRToRuntime implement the same host target
     #  defaulting logic, but there's currently no way to get back the decided host.
@@ -267,6 +272,10 @@ def build(
         )
 
     annotated_mods, target_host = Target.canon_target_map_and_host(annotated_mods, target_host)
+    # print("after canon_target_map_and_host")
+    # for tar, mod in annotated_mods.items():
+    #     print(tar)
+    #     print(annotated_mods[tar].show())
     if not target_host:
         for tar, mod in annotated_mods.items():
             device_type = ndarray.device(tar.kind.name, 0).device_type
@@ -277,9 +286,16 @@ def build(
         target_host = "llvm" if tvm.runtime.enabled("llvm") else "stackvm"
 
     annotated_mods, target_host = Target.canon_target_map_and_host(annotated_mods, target_host)
-
+    # print("after canon_target_map_and_host")
+    # for tar, mod in annotated_mods.items():
+    #     print(tar)
+    #     print(annotated_mods[tar].show())
+    # print(annotated_mods)
+    # print(target_host)
+    # print(type(target_host))
     rt_mod_host = _driver_ffi.tir_to_runtime(annotated_mods, target_host)
-
+    # print("after tir_to_runtime")
+    # print(rt_mod_host)
     annotated_mods, target_host = Target.canon_target_map_and_host(annotated_mods, target_host)
 
     if not isinstance(target_host, Target):

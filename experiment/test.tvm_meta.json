@@ -1,0 +1,14 @@
+{
+  "tvm_version": "0.1.0", 
+  "func_info": {"main_kernel0": {
+      "name": "", 
+      "arg_types": [
+        "handle", 
+        "handle"
+      ], 
+      "launch_param_tags": [
+        "blockIdx.x", 
+        "threadIdx.x", 
+        "threadIdx.y"
+      ]}}
+}

@@ -14,7 +14,7 @@ ctlm/measure_data_*/
 ctlm/dataset/
 experiment/dataset/
 experiment/measure_data/
-experiment/exp_data/
+experiment/ctlm_data/
 cuda/gemm_fp16.cu
 cuda/cost_model.py
 *.sqlite
@@ -201,7 +201,6 @@ cscope*
 # TVM generated code
 perf
 .bash_history
-*.json
 *.params
 *.ro
 *.onnx

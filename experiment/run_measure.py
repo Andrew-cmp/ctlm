@@ -3,6 +3,16 @@ from multiprocessing import Process, Lock
 from urllib.parse import quote
 import math
 import shutil
+import re
+import argparse
+n_part = 4
+def _parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--reg_times", type=int, help="this vaule is related to mps tool."
+    )
+    return parser.parse_args()
+args = _parse_args()
 
 
 n_part = 2
@@ -97,7 +107,7 @@ def worker(gpu_id, lock):
 
         if to_measure_file:
             measured_tmp_file = os.path.join("measure_data/measured_tmp", os.path.basename(to_measure_file))
-            command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{gpu_id}.log 2>&1"
+            command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --result_error_threshold=5 --reg_times={args.reg_times} --moved_dir={moved_dir} --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} >> run_{part_id}.log 2>&1"
             exec_cmd_if_error_send_mail(command)
             time.sleep(3)
 
@@ -152,4 +162,4 @@ except:
     for p in processes:
         p.terminate()
 
-# PYTHONUNBUFFERED=1 python run_measure.py |& tee run.log
+# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=2 |& tee run.log

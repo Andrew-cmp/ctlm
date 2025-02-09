@@ -91,13 +91,13 @@ def add_candidates_func_attr(candidates,model_name):
     registers_dict = dict()
     for register in registers:
         registers_dict.update(register)
-   
+    avg = math.ceil(sum(registers_dict.values())/len(registers_dict))
     #print(registers)
     #print(registers_dict)
     for i, candidate in enumerate(candidates):
         func = candidate.sch.mod["main"]
         name = f"{i}.cu"
-        register = registers_dict[name] 
+        register = registers_dict.get(name,default=avg)
         register_limitation = math.ceil(register/args.reg_times)
         func_with_attr = func.with_attr({"register": register_limitation})
         candidate.sch.mod.update_func(candidate.sch.mod.get_global_var("main"), func_with_attr)

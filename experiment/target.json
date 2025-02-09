@@ -1,0 +1,9 @@
+{
+"a100_100_100_100":{"type":"cuda","arch":"sm_80","SM":"108","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"a100_53_50_100":{"type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"82","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"v100_100_default_100":{"type":"cuda","arch":"sm_80","SM":"108","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"v100_53_default_100":{"type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"v100_53_equal_100":{"type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"82","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"v100_53_l1_100":{"type":"cuda","arch":"sm_80","SM":"79","register":"256","sharemem":"41","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"}
+
+}

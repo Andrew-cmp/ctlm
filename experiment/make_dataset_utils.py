@@ -53,28 +53,28 @@ def json_to_token(json_lines):
 def make_dataset(file, dataset_path, tokenizer_path, for_clm_or_mlm, valid_percentage=5):
     data_files = {}
     data_files["train"] = file
-    extension = data_files["train"].split(".")[-1]
+    dataset_name = data_files["train"].split(".")[-1]
     raw_datasets = load_dataset(
-        extension,
+        dataset_name,
         data_files=data_files,
         keep_in_memory=True
     )
     if valid_percentage > 0:
         raw_datasets["validation"] = load_dataset(
-            extension,
+            dataset_name,
             data_files=data_files,
             split=f"train[:{valid_percentage}%]",
             keep_in_memory=True
         )
         raw_datasets["train"] = load_dataset(
-            extension,
+            dataset_name,
             data_files=data_files,
             split=f"train[{valid_percentage}%:]",
             keep_in_memory=True
         )
     else:
         raw_datasets["train"] = load_dataset(
-            extension,
+            dataset_name,
             data_files=data_files,
             split=f"train",
             keep_in_memory=True
@@ -84,8 +84,18 @@ def make_dataset(file, dataset_path, tokenizer_path, for_clm_or_mlm, valid_perce
 
     column_names = list(raw_datasets["train"].features)
     if for_clm_or_mlm == "clm":
+        ## 分词处理
+        # 核心作用
+        # 将原始文本转换为模型可接受的数字序列（input_ids）
+        # 自动生成注意力掩码（attention_mask）
+        # 统一序列长度为模型支持的最大长度
+        # 复制输入ID作为标签，常见于 自回归模型（如GPT系列）
+        # 适用于语言模型预训练或文本生成任务（标签实际应为输入右移一位，需后续处理）
         def tokenize_function(examples):
             output = tokenizer(examples["text"], padding="max_length", max_length=tokenizer.model_max_length)
+            #print(output)
+            #input("continue")
+            # 标签实际应为输入右移一位，需后续处理
             output["labels"] = output["input_ids"].copy()
             del output["token_type_ids"]
             return output
@@ -97,6 +107,7 @@ def make_dataset(file, dataset_path, tokenizer_path, for_clm_or_mlm, valid_perce
     else:
         assert(False)
 
+    # 对raw_datasets里面的数据并行使用tokenize_function函数。
     tokenized_datasets = raw_datasets.map(
         tokenize_function,
         batched=True,

@@ -120,6 +120,7 @@ def get_target_info(target):
 def for_gen_tokenizer(work_dir):
     lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name = for_init_workload(work_dir)
     random.shuffle(lines)
+
     prompt_dic = {}
     virtual_target = os.path.basename(os.path.dirname(work_dir))
     target_info = get_target_info(virtual_target)
@@ -140,8 +141,8 @@ def for_gen_tokenizer(work_dir):
     # 根据lable排序
     prompt_dic_list.sort(key=lambda x: x['latency'])
     for i,  data_line in enumerate(prompt_dic_list):
-        data_line['text'].insert(3,f"rank")
-        data_line['text'].insert(4,f"{i}")
+        data_line['text'].append(f"rank")
+        data_line['text'].append(f"{i}")
         # data_line['rank'] = i
         data_line.pop("latency")
     #     print(data_line)
@@ -151,7 +152,7 @@ def for_gen_tokenizer(work_dir):
 def process_file(args, tmp_folder, for_type, keep_cnt):
     work_dir_i, work_dir = args
     print('work_dir:', work_dir_i, ' ' * 30, end='\r')
-    if for_type == FOR_GEN_TOKENIZER or FOR_GEN:
+    if for_type == FOR_GEN_TOKENIZER:
         data_list = for_gen_tokenizer(work_dir)
         data_list = json_to_token(data_list)
     else:
@@ -182,38 +183,10 @@ def main():
     script_args: ScriptArguments = parser.parse_args_into_dataclasses()[0]
     if script_args.for_type == FOR_GEN_TOKENIZER:
         all_dirs = get_all_dirs(script_args.dataset_path)
-        filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.tokenizer_path)
-        train_tokenizer([filename], script_args.tokenizer_path, test_length=True)
-    elif script_args.for_type == FOR_GEN:
-        all_dirs = []
-        virtual_device_dirs = glob.glob(os.path.join(script_args.dataset_path,"*"))
-        for virtual_device_dir in virtual_device_dirs :
-            all_dirs.extend(get_all_dirs(virtual_device_dir))
-        print('len all dirs:', len(all_dirs))
-        # # 应该不需要单独留出来一部分，因为我们已经减少了很多的网络了。
-        # hold_out_files_set = set(get_hold_out_five_files(target))
-        # all_dirs_new = []
-        # for dir in all_dirs:
-        #     if os.path.basename(dir) not in hold_out_files_set:
-        #         all_dirs_new.append(dir)
-        # # 从3290减少到了2962
-        # # all_dirs = all_dirs_new
-        # print('after hold out, len all dirs:', len(all_dirs))
-        if script_args.file_cnt:
-            set_seed(0)
-            all_dirs = random.sample(all_dirs, script_args.file_cnt)
-            print("Sampled dir cnt:", len(all_dirs))
-        filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.save_path)
-        # 用filename生成dataset
-        make_dataset(filename, script_args.save_path, script_args.tokenizer_path, 'clm')
+    filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.tokenizer_path)
+    train_tokenizer([filename], script_args.tokenizer_path, test_length=True)
 main()
 # python make_dataset.py \
 # --for_type=for_gen_tokenizer \
-# --dataset_path=/home/hwhu/ctlm/ctlm/dataset/measure_records/v100_100_default_100 \
-# --tokenizer_path=ctlm_data/ctlm_tokenizer
-
-# python make_dataset.py \
-# --for_type=for_gen \
-# --dataset_path=/home/houhw/ctlm/ctlm/dataset/measure_records/ \
-# --tokenizer_path=ctlm_data/ctlm_tokenizer \
-# --save_path=ctlm_data/ctlm_pretrain_dataset
+# --dataset_path=/home/houhw/ctlm/ctlm/dataset/measure_records/v100_100_default_100 \
+# --tokenizer_path=ctlm_data/gen_tokenizer

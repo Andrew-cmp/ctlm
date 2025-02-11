@@ -12,6 +12,7 @@ tlm_dataset/meta/tmp_folder/
 ctlm/measure_data/
 ctlm/measure_data_*/
 ctlm/dataset/
+ctlm/ctlm_data/
 experiment/dataset/
 experiment/measure_data/
 experiment/ctlm_data/

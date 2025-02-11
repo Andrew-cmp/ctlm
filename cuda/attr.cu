@@ -36,4 +36,6 @@ int main() {
     GETATTR(cudaDevAttrMaxGridDimZ,0);
     GETATTR(cudaDevAttrTotalConstantMemory,0);
     GETATTR(cudaDevAttrMaxPitch,0);
+    GETATTR(cudaDevAttrClockRate,0);
+    GETATTR(cudaDevAttrGlobalMemoryBusWidth,0);
 }

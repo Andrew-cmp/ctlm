@@ -248,6 +248,7 @@ def main():
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
+    # 我们的training_args.overwrite_output_dir = True
     # Detecting last checkpoint.
     last_checkpoint = None
     if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
@@ -266,6 +267,7 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
+    # 加载dataset
     if data_args.dataset_name is not None:
         tokenized_datasets = load_from_disk(data_args.dataset_name, keep_in_memory=True)
 
@@ -275,6 +277,7 @@ def main():
         "revision": model_args.model_revision,
         "use_auth_token": True if model_args.use_auth_token else None,
     }
+    # 加载tokenizer
     if model_args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
     # elif model_args.model_name_or_path:
@@ -290,7 +293,7 @@ def main():
         "revision": model_args.model_revision,
         "use_auth_token": True if model_args.use_auth_token else None,
     }
-    if model_args.config_name:
+    if model_args.config_name:  # 这里是none
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
     elif model_args.model_name_or_path:
         config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs,
@@ -301,8 +304,8 @@ def main():
                                             )
     else:
         config = CONFIG_MAPPING[model_args.model_type](
-            vocab_size=tokenizer.vocab_size, 
-            max_position_embeddings=tokenizer.model_max_length, 
+            vocab_size=tokenizer.vocab_size,
+            max_position_embeddings=tokenizer.model_max_length,
             bos_token_id=tokenizer.bos_token_id,
             cls_token_id=tokenizer.cls_token_id,
             eos_token_id=tokenizer.eos_token_id,
@@ -324,7 +327,7 @@ def main():
             config.update_from_string(model_args.config_overrides)
             logger.info(f"New config: {config}")
 
-    if model_args.model_name_or_path:
+    if model_args.model_name_or_path: # none
         torch_dtype = (
             model_args.torch_dtype
             if model_args.torch_dtype in ["auto", None]
@@ -358,8 +361,8 @@ def main():
     embedding_size = model.get_input_embeddings().weight.shape[0]
     if len(tokenizer) > embedding_size:
         model.resize_token_embeddings(len(tokenizer))
-
-    if data_args.block_size is None:
+    logger.info(f"tokenizer is {tokenizer}")
+    if data_args.block_size is None: #none
         block_size = tokenizer.model_max_length
         if block_size > 1024:
             logger.warning(
@@ -380,7 +383,7 @@ def main():
         if "train" not in tokenized_datasets:
             raise ValueError("--do_train requires a train dataset")
         train_dataset = tokenized_datasets["train"]
-        if data_args.max_train_samples is not None:
+        if data_args.max_train_samples is not None: #none
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
             train_dataset = train_dataset.select(range(max_train_samples))
 
@@ -485,3 +488,17 @@ def _mp_fn(index):
 
 if __name__ == "__main__":
     main()
+# python train_clm.py \
+#    --do_train \
+#    --model_type=gpt2 \
+#    --tokenizer_name=ctlm_data/ctlm_tokenizer \
+#    --output_dir=ctlm_data/clm_gen \
+#    --dataset_name=ctlm_data/ctlm_pretrain_dataset \
+#    --per_device_train_batch_size=5 \
+#    \
+#    --overwrite_output_dir=True \
+#    --save_steps=4000 \
+#    --logging_steps=100 \
+#    --num_train_epochs=20 \
+#    --remove_unused_columns=False \
+#    --learning_rate=5e-5

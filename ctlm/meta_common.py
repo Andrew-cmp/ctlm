@@ -74,8 +74,9 @@ def get_task_info_filename(network_key, target):
 
 
 def load_tasks():
-    assert(NETWORK_INFO_FOLDER is not None)
-    tasks = pickle.load(open(f"{NETWORK_INFO_FOLDER}/all_tasks.pkl", "rb"))
+    # assert(NETWORK_INFO_FOLDER is not None)
+    network_info_folder = "/home/houhw/tlm/tlm_dataset/meta/dataset/network_info/v100"
+    tasks = pickle.load(open(f"{network_info_folder}/all_tasks.pkl", "rb"))
     return tasks
 
 
@@ -87,7 +88,7 @@ def load_hash_tasks(target):
     tasks = load_tasks()
     task_hashes = get_task_hashes(tasks)
     task_dic = {hash: task for hash, task in zip(task_hashes, tasks)}
-    
+
     # hold_out = list(set([it[1] for it in list(yield_hold_out_five_files(target))]))
     # hold_out_hashes = set(get_task_hashes(hold_out))
     # for hash in hold_out_hashes:
@@ -112,7 +113,7 @@ def hold_out_task_files(target):
         # "gpt2": get_task_info_filename(('gpt2', [1,128]), target),
         # "llama": get_task_info_filename(('llama', [4,256]), target),
         "bert_tiny": get_task_info_filename(('bert_tiny', [1,128]), target),
-        
+
         "densenet_121": get_task_info_filename(('densenet_121', [8,3,256,256]), target),
         "bert_large": get_task_info_filename(('bert_large', [4,256]), target),
         "wide_resnet_50": get_task_info_filename(('wide_resnet_50', [8,3,256,256]), target),

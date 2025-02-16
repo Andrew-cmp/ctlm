@@ -483,15 +483,18 @@ runtime::Module TIRToRuntime(const Map<Target, IRModule>& inputs_arg,
       // std::cout<<"in driver_api host_mod"<<host_mod<<std::endl;
 
       auto& device_mod = pair.second;
-      //为device_mod设置属性
-      //这里是copy赋值
-      tvm::tir::PrimFunc prim_func_device = Downcast<tvm::tir::PrimFunc>(device_mod->Lookup("main_kernel0"));
-      // std::cout<<"in driver_api device_mod"<<device_mod<<std::endl;
-      auto prim_func_device_with_attr = WithAttr(std::move(prim_func_device),"register",attr);
-      // std::cout<<"in driver_api prim_func_device_with_attr"<<prim_func_device_with_attr<<std::endl;
-      device_mod->Update(device_mod->GetGlobalVar("main_kernel0"),std::move(prim_func_device_with_attr));
 
-      // std::cout<<"in driver_api device_mod"<<device_mod<<std::endl;
+      //如果设置了这个属性的话
+      if(attr){
+        //为device_mod设置属性
+        //这里是copy赋值
+        tvm::tir::PrimFunc prim_func_device = Downcast<tvm::tir::PrimFunc>(device_mod->Lookup("main_kernel0"));
+        // std::cout<<"in driver_api device_mod"<<device_mod<<std::endl;
+        auto prim_func_device_with_attr = WithAttr(std::move(prim_func_device),"register",attr);
+        // std::cout<<"in driver_api prim_func_device_with_attr"<<prim_func_device_with_attr<<std::endl;
+        device_mod->Update(device_mod->GetGlobalVar("main_kernel0"),std::move(prim_func_device_with_attr));
+        // std::cout<<"in driver_api device_mod"<<device_mod<<std::endl;
+      }
 
       ICHECK(host_mod.defined()) << "The split host module must be defined";
 

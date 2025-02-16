@@ -238,7 +238,7 @@ def main():
         ms.TuneContext(target=Target(args.target)))
 
     database = ms.database.JSONDatabase(work_dir=args.candidate_cache_dir)
-    measure_candidates(database, builder, runner, task_record,new_dir)
+    measure_candidates(database, builder, runner, task_record)
 
 
 if __name__ == "__main__":
@@ -248,10 +248,10 @@ if __name__ == "__main__":
 # --candidate_cache_dir=/home/hwhu/ctlm/ctlm/dataset/to_measure_programs/v100/34288885545025224__fused_nn_conv2d_add_nn_relu \
 # --target=nvidia/nvidia-a100
 
-# python measure_programs.py \
+# python measure_program.py \
 # --result_cache_dir=dataset/tmp \
-# --candidate_cache_dir=ctlm_data/ctlm_record_for_eval/gen_eval_response.json \
+# --candidate_cache_dir=/home/houhw/ctlm/ctlm/ctlm_data/ctlm_record_for_eval/gen_eval_response.json/6078906722323699861__fused_nn_conv3d_add_add_nn_relu \
 # --target=nvidia/nvidia-a6000 \
 # --reg_times=-1 \
 # --result_error_threshold=5 \
-# >>run.log 2>&1
+

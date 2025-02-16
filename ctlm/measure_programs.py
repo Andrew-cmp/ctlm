@@ -135,7 +135,7 @@ def measure_candidates(database, builder, runner, task_record):
         candidates.append(record.as_measure_candidate())
     model_name, workload_name = database.path_workload.split("/")[-2:]
     record_name = database.path_tuning_record.split("/")[-1]
-    candidates = add_candidates_func_attr(candidates,model_name)
+    #candidates = add_candidates_func_attr(candidates,model_name)
     with ms.Profiler() as profiler:
         for idx in range(0, len(candidates), args.batch_size):
             batch_candidates = candidates[idx : idx + args.batch_size]
@@ -188,7 +188,7 @@ def measure_candidates(database, builder, runner, task_record):
                 result_error_flag = 1
         if result_error_num >= result_error_threshold:
             raise MPSError("error")
-            
+
     fail_indices_name = workload_name.replace("_workload.json", "_failed_indices.txt")
     build_fail_indices_name = workload_name.replace("_workload.json", "_build_failed_indices.txt")
     with open(
@@ -199,7 +199,7 @@ def measure_candidates(database, builder, runner, task_record):
         os.path.join(args.result_cache_dir, model_name, build_fail_indices_name), "w", encoding="utf8"
     ) as file:
         file.write(" ".join([str(n) for n in build_fail_indices]))
-    print(
+    logging.info(
         f"Builder time: {profiler.get()['build']}, Runner time: {profiler.get()['run']}\n\
             Build model is {model_name}\n\
             Failed number of builds: {len(build_fail_indices)},\
@@ -225,8 +225,8 @@ def main():
 
     task_record = ms.task_scheduler.task_scheduler.TaskRecord(
         ms.TuneContext(target=Target(args.target)))
-    
-    
+
+
     model_handled_dirs = []
     for model_dir in tqdm(model_dirs):
         # such as '14729483509063283358__fused_nn_contrib_conv2d_winograd_without_weight_transform_add_add_nn_relu'
@@ -259,9 +259,10 @@ def main():
             sys.exit(1)
         else:
             model_handled_dirs.append(model_name)
-            
+
 
 if __name__ == "__main__":
+    print(args.candidate_cache_dir)
     main()
 # python measure_programs.py \
 # --result_cache_dir=dataset/tmp \
@@ -269,4 +270,14 @@ if __name__ == "__main__":
 # --target=nvidia/nvidia-a100 \
 # --reg_times=2 \
 # --result_error_threshold=5 \
-# --moved_dir=dataset/tmp 
+# --moved_dir=dataset/tmp
+
+
+# python measure_programs.py \
+# --result_cache_dir=ctlm_data/ctlm_record_for_eval/gen_eval_response.json_measured \
+# --candidate_cache_dir=ctlm_data/ctlm_record_for_eval/gen_eval_response.json \
+# --target=nvidia/nvidia-a6000 \
+# --reg_times=-1 \
+# --result_error_threshold=5 \
+# --moved_dir=dataset/tmp \
+# >run.log 2>&1

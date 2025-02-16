@@ -7,35 +7,44 @@
     printf(#func":%d \n",func##device);
 
 int main() {
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
-    printf("Device name: %s\n" , prop.name) ;
-    printf("Compute capability: %d\n"  , prop.minor) ;
-    
 
-    GETATTR(cudaDevAttrMultiProcessorCount,0);
-    cudaError_t err = cudaDeviceSetCacheConfig(cudaFuncCachePreferShared);
-    if (err != cudaSuccess) {
-       printf("Error setting shared memory config: %s",cudaGetErrorString(err)) ;
-    }   cudaFuncCache pCacheConfig;
-    cudaError_t err3 = cudaDeviceGetCacheConfig(&pCacheConfig);
-    if (err != cudaSuccess) {
-        printf("Error setting shared memory config: %s",cudaGetErrorString(err3)) ;
+    int deviceCount;
+    cudaGetDeviceCount(&deviceCount);
+    printf("系统检测到 %d 个CUDA设备\n", deviceCount);
+
+    #pragma unroll
+    for (int dev = 0; dev < deviceCount; dev++){
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, dev);
+        printf("Device name: %s\n" , prop.name) ;
+        printf("Compute capability: %d\n"  , prop.minor) ;
+        GETATTR(cudaDevAttrMultiProcessorCount,dev);
+        cudaError_t err = cudaDeviceSetCacheConfig(cudaFuncCachePreferShared);
+        if (err != cudaSuccess) {
+           printf("Error setting shared memory config: %s",cudaGetErrorString(err)) ;
+        }   cudaFuncCache pCacheConfig;
+        cudaError_t err3 = cudaDeviceGetCacheConfig(&pCacheConfig);
+        if (err != cudaSuccess) {
+            printf("Error setting shared memory config: %s",cudaGetErrorString(err3)) ;
+        }
+        printf("sharedMemPerMultiprocessor:%d\n", prop.sharedMemPerMultiprocessor );
+        GETATTR(cudaDevAttrMaxSharedMemoryPerBlock,dev);
+        GETATTR(cudaDevAttrWarpSize,dev);
+        GETATTR(cudaDevAttrComputeCapabilityMajor,dev);
+        GETATTR(cudaDevAttrMaxBlockDimX,dev);
+        GETATTR(cudaDevAttrMaxBlockDimY,dev);
+        GETATTR(cudaDevAttrMaxBlockDimZ,dev);
+        GETATTR(cudaDevAttrMaxGridDimX,dev);
+        GETATTR(cudaDevAttrMaxGridDimY,dev);
+        GETATTR(cudaDevAttrMaxGridDimZ,dev);
+        GETATTR(cudaDevAttrTotalConstantMemory,dev);
+        GETATTR(cudaDevAttrMaxPitch,dev);
+        GETATTR(cudaDevAttrClockRate,dev);
+        GETATTR(cudaDevAttrGlobalMemoryBusWidth,dev);
+
     }
-    printf("%d\n",pCacheConfig);
 
-    printf("sharedMemPerMultiprocessor:%d\n", prop.sharedMemPerMultiprocessor );
-    GETATTR(cudaDevAttrMaxSharedMemoryPerBlock,0);
-    GETATTR(cudaDevAttrWarpSize,0);
-    GETATTR(cudaDevAttrComputeCapabilityMajor,0);
-    GETATTR(cudaDevAttrMaxBlockDimX,0);
-    GETATTR(cudaDevAttrMaxBlockDimY,0);
-    GETATTR(cudaDevAttrMaxBlockDimZ,0);
-    GETATTR(cudaDevAttrMaxGridDimX,0);
-    GETATTR(cudaDevAttrMaxGridDimY,0);
-    GETATTR(cudaDevAttrMaxGridDimZ,0);
-    GETATTR(cudaDevAttrTotalConstantMemory,0);
-    GETATTR(cudaDevAttrMaxPitch,0);
-    GETATTR(cudaDevAttrClockRate,0);
-    GETATTR(cudaDevAttrGlobalMemoryBusWidth,0);
+
+
+
 }

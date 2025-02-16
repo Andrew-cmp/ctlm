@@ -54,7 +54,6 @@ def register_data_path(target_str):
     MEASURE_RECORD_FOLDER = f"dataset/measure_records/{model}"
     HARDWARE_PLATFORM = model
 
-
 def get_task_info_filename(network_key, target):
     assert(NETWORK_INFO_FOLDER is not None)
     network_task_key = (network_key,) + (str(target.kind),)
@@ -87,7 +86,7 @@ def load_hash_tasks(target):
     tasks = load_tasks()
     task_hashes = get_task_hashes(tasks)
     task_dic = {hash: task for hash, task in zip(task_hashes, tasks)}
-    
+
     # hold_out = list(set([it[1] for it in list(yield_hold_out_five_files(target))]))
     # hold_out_hashes = set(get_task_hashes(hold_out))
     # for hash in hold_out_hashes:
@@ -112,7 +111,7 @@ def hold_out_task_files(target):
         # "gpt2": get_task_info_filename(('gpt2', [1,128]), target),
         # "llama": get_task_info_filename(('llama', [4,256]), target),
         "bert_tiny": get_task_info_filename(('bert_tiny', [1,128]), target),
-        
+
         "densenet_121": get_task_info_filename(('densenet_121', [8,3,256,256]), target),
         "bert_large": get_task_info_filename(('bert_large', [4,256]), target),
         "wide_resnet_50": get_task_info_filename(('wide_resnet_50', [8,3,256,256]), target),
@@ -120,7 +119,24 @@ def hold_out_task_files(target):
         "dcgan": get_task_info_filename(('dcgan', [8,3,64,64]), target)
     }
     return files
+def test_case_task():
+    target = "nvidia/nvidia-v100"
+    files = {
 
+        "resnet_50": get_task_info_filename(('resnet_50', [1,3,240,240]), target),
+        "mobilenet_v2": get_task_info_filename(('mobilenet_v2', [1,3,240,240]), target),
+        "resnext_50": get_task_info_filename(('resnext_50', [1,3,240,240]), target),
+        "bert_base": get_task_info_filename(('bert_base', [1,128]), target),
+        # "gpt2": get_task_info_filename(('gpt2', [1,128]), target),
+        # "llama": get_task_info_filename(('llama', [4,256]), target),
+        "bert_tiny": get_task_info_filename(('bert_tiny', [1,128]), target),
+
+        "densenet_121": get_task_info_filename(('densenet_121', [8,3,240,240]), target),
+        "bert_large": get_task_info_filename(('bert_large', [4,128]), target),
+        "wide_resnet_50": get_task_info_filename(('wide_resnet_50', [8,3,240,240]), target),
+        "resnet3d_18": get_task_info_filename(('resnet3d_18', [4,3,128,128,16]), target),
+        "dcgan": get_task_info_filename(('dcgan', [8,3,64,64]), target)
+    }
 
 def yield_hold_out_five_files(target):
     files = hold_out_task_files(target)

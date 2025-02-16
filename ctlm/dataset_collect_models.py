@@ -48,14 +48,20 @@ def _build_dataset() -> List[Tuple[str, List[int]]]:
     ]:
         for batch_size in [1,  8]:
             for image_size in [224,  256]:
+        # for batch_size in [1, 4, 8]:
+        #     for image_size in [224, 240, 256]:
                 network_keys.append((name, [batch_size, 3, image_size, image_size]))
     # inception-v3
     for name in ["inception_v3"]:
         for batch_size in [1, 4]:
             for image_size in [299]:
+        # for batch_size in [1, 2, 4]:
+        #     for image_size in [299]:
                 network_keys.append((name, [batch_size, 3, image_size, image_size]))
     # resnet3d
     for name in ["resnet3d_18"]:
+        # for batch_size in [1, 2, 4]:
+        #     for image_size in [112, 128, 144]:
         for batch_size in [1, 4]:
             for image_size in [112, 144]:
                 network_keys.append((name, [batch_size, 3, image_size, image_size, 16]))
@@ -63,6 +69,9 @@ def _build_dataset() -> List[Tuple[str, List[int]]]:
     for name in ["bert_tiny", "bert_base",  "bert_large"]:
     #for name in ["bert_tiny", "bert_base", "bert_medium", "bert_large"]:
     # for name in ["bert_tiny", "bert_base", "bert_medium", "bert_large", "gpt2"]:
+
+        # for batch_size in [1, 2, 4]:
+        #     for seq_length in [64, 128, 256]:
         for batch_size in [1, 4]:
             for seq_length in [64, 256]:
                 network_keys.append((name, [batch_size, seq_length]))

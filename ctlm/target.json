@@ -1,9 +1,7 @@
 {
-"a100_100_100_100":{"type":"cuda","arch":"sm_80","SM":"108","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
-"a100_53_50_100":{"type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"82","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
-"v100_100_default_100":{"type":"cuda","arch":"sm_80","SM":"108","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
-"v100_53_default_100":{"type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
-"v100_53_equal_100":{"type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"82","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
-"v100_53_l1_100":{"type":"cuda","arch":"sm_80","SM":"79","register":"256","sharemem":"41","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"}
-
+"v100_100_default_100":{"name":"a100_100_default_100","type":"cuda","arch":"sm_80","SM":"108","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"v100_53_default_100":{"name":"a100_53_default_100","type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"v100_53_equal_100":{"name":"a100_53_equal_100","type":"cuda","arch":"sm_80","SM":"57","register":"256","sharemem":"82","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"v100_73_preferl1_100":{"name":"a100_73_perferl1_100","type":"cuda","arch":"sm_80","SM":"79","register":"256","sharemem":"41","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
+"nvidia/nvidia-a6000":{"name":"nvidia/nvidia-a6000","type":"cuda","arch":"sm_80","SM":"84","register":"256","sharemem":"128","device_arch":"ampere","cudacore":"128","mem":"1600","GPUclock":"1800","FP32":"38.7"}
 }

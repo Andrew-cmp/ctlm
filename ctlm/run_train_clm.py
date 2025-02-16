@@ -10,6 +10,7 @@ if os.path.exists(log_file):
     if tag == 'y':
         # 删除文件
         os.remove(log_file)
+
 # 构建完整的 screen 命令
 cmd = """tmux new -s %s -d '{
 {
@@ -47,3 +48,4 @@ date
 
 # 使用 subprocess 运行命令
 subprocess.Popen(cmd, shell=True)
+# python run_train_clm.py

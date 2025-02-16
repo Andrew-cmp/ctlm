@@ -77,7 +77,7 @@ def for_init_workload(work_dir):
         for shape in shape_list:
             shape_part.append([shape.dtype, tuple(shape.shape)])
         target_part = str(rec.target)
-    
+
     return lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name
 
 
@@ -109,18 +109,19 @@ def for_init_lines(lines, path_tuning_record):
             dec = decisions_part[dec_i]
             dec_label = decisions_label[dec_i]
             dec[0] = dec_label[0]
-        
+
         yield line, insts_part, decisions_part, decisions_label, parallel_label, latency
 
-    
+
 def for_gen_tokenizer(work_dir):
     data_list = []
     lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name = for_init_workload(work_dir)
     for line, insts_part, decisions_part, decisions_label, parallel_label, latency in for_init_lines(lines, path_tuning_record):
-        ppt = 'PPT'  
+        ppt = 'PPT'
         data_list.append({'text': [task_name_part, shape_part, target_part, insts_part, decisions_part,
-                                    ppt, 
+                                    ppt,
                                     decisions_label, parallel_label]})
+    #向词表中添加target信息
     return data_list
 
 
@@ -129,7 +130,7 @@ def for_gen_train_sketch(work_dir, keep_cnt):
     prompt_lines = []
     lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name = for_init_workload(work_dir)
     for line, insts_part, decisions_part, decisions_label, parallel_label, latency in for_init_lines(lines, path_tuning_record):
-        ppt = 'PPT'  
+        ppt = 'PPT'
         ppt_line = {'text': [task_name_part, shape_part, target_part, insts_part, decisions_part, ppt],
                     'hash': hash,
                     'task_name': task_name}
@@ -155,7 +156,7 @@ def for_gen_best(work_dir):
         min_latency = min(min_latency, latency)
         ppt = 'PPT'
         data_line = {'text': [task_name_part, shape_part, target_part, insts_part, decisions_part,
-                                    ppt, 
+                                    ppt,
                                     decisions_label, parallel_label],
                     'latency': latency}
         ppt_line = {'text': [task_name_part, shape_part, target_part, insts_part, decisions_part, ppt],
@@ -168,7 +169,7 @@ def for_gen_best(work_dir):
 
     for _, (latency, data_line) in prompt_dic.items():
         data_line['label'] = min_latency / data_line['latency']
-        
+
     prompt_dic_list = [x[1] for x in list(prompt_dic.values())]
     prompt_dic_list.sort(key=lambda x: x['label'], reverse=True)
     from meta_common import HARDWARE_PLATFORM
@@ -232,7 +233,7 @@ def main():
     print(script_args)
     register_data_path(script_args.target)
     target = tvm.target.Target(script_args.target)
-    
+
     ## 输入是dataset_path下的jason文件，一般为dataset/to_measure_programs/v100，应该是unlabelled subgraph program
     ## 输出是gen_data/gen_tokenizer_v100，将list转化为一串token。
     if script_args.for_type == FOR_GEN_TOKENIZER:
@@ -242,7 +243,7 @@ def main():
         print('len all dirs:', len(all_dirs))
         filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.tokenizer_path)
         train_tokenizer([filename], script_args.tokenizer_path, test_length=True)
-        
+
     #
     elif script_args.for_type == FOR_GEN:
         all_dirs = []

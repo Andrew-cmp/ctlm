@@ -12,8 +12,8 @@ if os.path.exists(log_file):
         os.remove(log_file)
 
 # 构建完整的 screen 命令
-cmd = """tmux new -s %s -d '{ 
-{ 
+cmd = """tmux new -s %s -d '{
+{
 set -x
 echo "#################################################################"
 date
@@ -42,9 +42,10 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python train_clm.py \
 
 
 date
-} |& tee -a %s 
-}' 
+} |& tee -a %s
+}'
 """ % (session_name, log_file)
 
 # 使用 subprocess 运行命令
 subprocess.Popen(cmd, shell=True)
+# python run_train_clm.py

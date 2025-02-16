@@ -27,6 +27,10 @@ int main() {
         if (err != cudaSuccess) {
             printf("Error setting shared memory config: %s",cudaGetErrorString(err3)) ;
         }
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
         printf("sharedMemPerMultiprocessor:%d\n", prop.sharedMemPerMultiprocessor );
         GETATTR(cudaDevAttrMaxSharedMemoryPerBlock,dev);
         GETATTR(cudaDevAttrWarpSize,dev);

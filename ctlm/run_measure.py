@@ -9,7 +9,13 @@ n_part = 4
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--reg_times", type=int, help="this vaule is related to mps tool."
+        "--reg_times", type=float, help="this vaule is related to mps tool."
+    )
+    parser.add_argument(
+        "--cuda_id1", type=str, help="this vaule is related to mps tool.",default="1"
+    )
+    parser.add_argument(
+        "--cuda_id2", type=str, help="this vaule is related to mps tool.",default="2"
     )
     return parser.parse_args()
 args = _parse_args()
@@ -86,12 +92,12 @@ def merge_worker(lock):
 
 
 def worker(gpu_id, lock):
-    time.sleep(9 - gpu_id)
+    time.sleep(9 - 2)
 
     while True:
         with lock:
             to_measure_list = glob.glob("measure_data/to_measure/*_part_*")
-            
+
             to_measure_list.sort()
             to_measure_file = None
             if len(to_measure_list) > 0:
@@ -142,9 +148,9 @@ os.system(f'mv measure_data/to_measure_*/*_part_* measure_data/to_measure/')
 
 try:
     # 注意，我们再measure_programs中指定了target=a6000，这里指定的target不会生效，只会和文件夹有关。
-    
+
     # 下面的进程都会启动，并同时运行，只有到了p.join时才会阻塞主线程
-    available_ids = [2,1]
+    available_ids = [args.cuda_id1,args.cuda_id2]
     processes = []
 
     lock = Lock()
@@ -171,4 +177,4 @@ except:
     for p in processes:
         p.terminate()
 
-# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=2 |& tee run.log
+# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=1.5 --cuda_id1=MIG-1225b991-2e5a-522d-bdc9-c524f5000c68 --cuda_id2=MIG-4aacf663-1ed4-5fd6-960a-4009ed0e384e |& tee run.log

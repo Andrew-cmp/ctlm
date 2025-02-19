@@ -41,17 +41,18 @@ def remove_trailing_numbers(s):
 
 def register_data_path(target_str):
     assert(isinstance(target_str, str))
-    model_list = ['i7', 'v100', 'a100', '2080', 'None','a6000','Xeon-Platinum-8488C']
+    model_list = ['v100', 'a100', '2080', 'None','a6000']
     for model in model_list:
         if model in target_str:
             break
     assert(model != 'None')
 
     print(f'register data path: {model}')
-    global NETWORK_INFO_FOLDER, TO_MEASURE_PROGRAM_FOLDER, MEASURE_RECORD_FOLDER, HARDWARE_PLATFORM
-    NETWORK_INFO_FOLDER = f"dataset/network_info/{model}"
-    TO_MEASURE_PROGRAM_FOLDER = f"dataset/to_measure_programs/{model}"
-    MEASURE_RECORD_FOLDER = f"dataset/measure_records/{model}"
+    #global NETWORK_INFO_FOLDER, TO_MEASURE_PROGRAM_FOLDER, MEASURE_RECORD_FOLDER, HARDWARE_PLATFORM
+    #NETWORK_INFO_FOLDER = f"dataset/network_info/{model}"
+    #TO_MEASURE_PROGRAM_FOLDER = f"dataset/to_measure_programs/{model}"
+    #MEASURE_RECORD_FOLDER = f"dataset/measure_records/{model}"
+    global HARDWARE_PLATFORM
     HARDWARE_PLATFORM = model
 
 
@@ -80,7 +81,7 @@ def load_tasks():
     return tasks
 
 
-def load_hash_tasks(target):
+def load_hash_tasks():
     # cache_pkl = f'{__name__}_{HARDWARE_PLATFORM}_hash_tasks_exclude_hold_out.pkl'
     # if os.path.exists(cache_pkl):
     #     with open(cache_pkl, 'rb') as f:

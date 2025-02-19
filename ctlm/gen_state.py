@@ -26,7 +26,8 @@ class ScriptArguments:
     sketch_path: str = field(metadata={"help": ""})
     save_path: str = field(metadata={"help": ""})
     keep_cnt: int = field(metadata={"help": ""})
-    target: str = field(metadata={"help": ""})
+    dataset_path: str = field(metadata={"help": ""})
+    #target: str = field(metadata={"help": ""})
 
     # device: str = field(default="cuda:0", metadata={"help": ""})
     allow_repeat: bool = field(default=True, metadata={"help": ""})
@@ -253,7 +254,7 @@ def main():
             sketch_dic[json_line['hash']].append(json_line)
 
     sketch_dic_list = list(sketch_dic.items())
-    hash_tasks = load_hash_tasks(script_args.target)
+    hash_tasks = load_hash_tasks()
 
     num_gpus = torch.cuda.device_count()
     parallel_cnt = num_gpus * 3
@@ -264,7 +265,7 @@ def main():
     if os.path.exists(script_args.save_path):
         shutil.rmtree(script_args.save_path)
     os.makedirs(script_args.save_path)
-    dataset_path = f'dataset/to_measure_programs'
+    dataset_path = script_args.dataset_path
     for parallel_i in range(parallel_cnt):
         device = f'cuda:{parallel_i % num_gpus}'
         sketch_dic_list_i = sketch_dic_list[parallel_i*per_len : (parallel_i+1)*per_len]
@@ -288,5 +289,5 @@ if __name__ == "__main__":
 # --sketch_path=ctlm_data/ctlm_record_for_eval/0_merge.json \
 # --save_path=ctlm_data/ctlm_record_for_eval/gen_eval_response.json \
 # --allow_repeat=True \
-# --target=nvidia/nvidia-a6000 \
 # --keep_cnt=32
+## gen_state时不需要知道target信息。

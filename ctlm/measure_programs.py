@@ -271,7 +271,6 @@ if __name__ == "__main__":
 # --reg_times=2 \
 # --result_error_threshold=5 \
 # --moved_dir=dataset/tmp
-<<<<<<< Updated upstream
 
 
 # python measure_programs.py \
@@ -282,5 +281,3 @@ if __name__ == "__main__":
 # --result_error_threshold=5 \
 # --moved_dir=dataset/tmp \
 # >run.log 2>&1
-=======
->>>>>>> Stashed changes

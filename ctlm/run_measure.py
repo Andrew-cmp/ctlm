@@ -12,10 +12,10 @@ def _parse_args():
         "--reg_times", type=float, help="this vaule is related to mps tool."
     )
     parser.add_argument(
-        "--cuda_id1", type=str, help="this vaule is related to mps tool.",default="1"
+        "--cuda_id1", type=str, help="this vaule is related to mps tool.",default="-1"
     )
     parser.add_argument(
-        "--cuda_id2", type=str, help="this vaule is related to mps tool.",default="2"
+        "--cuda_id2", type=str, help="this vaule is related to mps tool.",default="-1"
     )
     return parser.parse_args()
 args = _parse_args()
@@ -110,13 +110,13 @@ def worker(gpu_id, lock):
 
         if to_measure_file:
             base_name = os.path.basename(to_measure_file)
-            match = re.search(r'_(\d+)', base_name)
+            match = re.search(r'part_(\d+)', base_name)
             part_id = match.group(1)
             measured_tmp_file = os.path.join("measure_data/measured_tmp", os.path.basename(to_measure_file))
             print(f"part_id is :{part_id}")
             moved_dir = "measure_data/moved"
             while True:
-                command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --result_error_threshold=5 --reg_times={args.reg_times} --moved_dir={moved_dir} --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} >> run_{part_id}.log 2>&1"
+                command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --result_error_threshold=5 --reg_times={args.reg_times} --moved_dir={moved_dir} --target=\"nvidia/nvidia-a100\" --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{part_id}.log 2>&1"
                 returncode = exec_cmd_if_error_send_mail(command)
                 if(returncode != 0):
                     time.sleep(3)
@@ -150,7 +150,12 @@ try:
     # 注意，我们再measure_programs中指定了target=a6000，这里指定的target不会生效，只会和文件夹有关。
 
     # 下面的进程都会启动，并同时运行，只有到了p.join时才会阻塞主线程
-    available_ids = [args.cuda_id1,args.cuda_id2]
+    if(args.cuda_id1 == "-1"):
+        available_ids = [args.cuda_id2]
+    elif(args.cuda_id2 == "-1"):
+        available_ids = [args.cuda_id1]
+    else:
+        available_ids = [args.cuda_id1,args.cuda_id2]
     processes = []
 
     lock = Lock()
@@ -178,3 +183,4 @@ except:
         p.terminate()
 
 # PYTHONUNBUFFERED=1 python run_measure.py --reg_times=1.5 --cuda_id1=MIG-1225b991-2e5a-522d-bdc9-c524f5000c68 --cuda_id2=MIG-4aacf663-1ed4-5fd6-960a-4009ed0e384e |& tee run.log
+# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=-1 --cuda_id1=MIG-ceaa2e03-b413-597f-8c77-86b869b62981  |& tee run.log

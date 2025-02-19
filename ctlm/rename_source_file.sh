@@ -12,15 +12,15 @@ fi
 
 a="$1"
 b="$2"
-target_file_reg="/home/houhw/ctlm/src/target/source/codegen_cuda.cc"
-target_file_reg_common="/home/houhw/ctlm/ctlm/cppfile/codegen_cuda_common.cc.bak"
-target_file_reg_maxnreg="/home/houhw/ctlm/ctlm/cppfile/codegen_cuda_maxnreg.cc.bak"
+target_file_reg="../src/target/source/codegen_cuda.cc"
+target_file_reg_common="cppfile/codegen_cuda_common.cc.bak"
+target_file_reg_maxnreg="cppfile/codegen_cuda_maxnreg.cc.bak"
 
-target_file_sharemem="/home/houhw/ctlm/src/runtime/cuda/cuda_module.cc"
-target_file_sharemem_default="/home/houhw/ctlm/ctlm/cppfile/cuda_module_default.cc.bak"
-target_file_sharemem_equal="/home/houhw/ctlm/ctlm/cppfile/cuda_module_equal.cc.bak"
-target_file_sharemem_preferl1="/home/houhw/ctlm/ctlm/cppfile/cuda_module_preferl1.cc.bak"
-target_file_sharemem_prefershared="/home/houhw/ctlm/ctlm/cppfile/cuda_module_prefershared.cc.bak"
+target_file_sharemem="../src/runtime/cuda/cuda_module.cc"
+target_file_sharemem_default="cppfile/cuda_module_default.cc.bak"
+target_file_sharemem_equal="cppfile/cuda_module_equal.cc.bak"
+target_file_sharemem_preferl1="cppfile/cuda_module_preferl1.cc.bak"
+target_file_sharemem_prefershared="cppfile/cuda_module_prefershared.cc.bak"
 
 
 # 核心重命名逻辑
@@ -76,6 +76,6 @@ else
 fi
 
 
-cd "/home/houhw/ctlm/build"
+cd "../build"
 make -j 64
 cd -

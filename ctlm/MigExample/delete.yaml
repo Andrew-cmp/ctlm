@@ -1,0 +1,11 @@
+version: v1
+mig-configs:
+  current:
+  - device-filter: "0x20F110DE"
+    devices: all
+    mig-enabled: false
+    mig-devices: {}
+  - device-filter: "0x20B510DE"
+    devices: all
+    mig-enabled: false
+    mig-devices: {}

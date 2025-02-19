@@ -1,0 +1,42 @@
+version: v1
+mig-configs:
+  mig.yaml:
+  - device-filter: "0x20F110DE"
+    devices: all
+    mig-enabled: false
+    mig-devices: {}
+  - device-filter: "0x20B510DE"
+    devices: [1]
+    mig-enabled: true
+    mig-devices:
+      3g.40gb: 1
+      4g.40gb: 1
+  - device-filter: "0x20B510DE"
+    devices: [2]
+    mig-enabled: true
+    mig-devices: {}
+
+
+  delete:
+  - device-filter: "0x20F110DE"
+    devices: all
+    mig-enabled: false
+    mig-devices: {}
+  - device-filter: "0x20B510DE"
+    devices: all
+    mig-enabled: false
+    mig-devices: {}
+  device3g:
+  - device-filter: "0x20F110DE"
+    devices: all
+    mig-enabled: false
+    mig-devices: {}
+  - device-filter: "0x20B510DE"
+    devices: [1]
+    mig-enabled: false
+    mig-devices: {}
+  - device-filter: "0x20B510DE"
+    devices: [2]
+    mig-enabled: true
+    mig-devices:
+      3g.40gb: 1

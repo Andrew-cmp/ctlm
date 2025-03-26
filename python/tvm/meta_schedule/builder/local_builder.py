@@ -140,7 +140,7 @@ class LocalBuilder(PyBuilder):
         super().__init__()
 
         if max_workers is None:
-            max_workers = cpu_count(logical=True)
+            max_workers = cpu_count(logical=False)
         logger.info("LocalBuilder: max_workers = %d", max_workers)
 
         self.max_workers = max_workers
@@ -290,8 +290,8 @@ def default_export(mod: Module) -> str:
     # #ptx_code_path = os.path.join(hold_path,"ptx_code.ptx")
     # with open(cuda_code_path,"w") as f:
     #    f.write(mod.imported_modules[0].get_source())
-    
-    
+
+
     artifact_path = os.path.join(tempfile.mkdtemp(), "tvm_tmp_mod." + tar.output_format)
     mod.export_library(artifact_path, tar)
     return artifact_path

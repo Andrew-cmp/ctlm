@@ -2,20 +2,23 @@
 #include <stdio.h>
 #include <stdint.h>
 #define ELE_TYPE float
-#define TILE_M 2
-#define TILE_N 2
+#define BLOCK_SIZE_M 2 ///每个线程需要处理的M维度数据块大小
+#define BLOCK_SIZE_N 4  ///每个线程需要处理的N维度数据块大小
+#define BLOCK_SIZE_K 4 //每个线程块需要A load into sharemen的宽度
 template<uint32_t M,uint32_t N,uint32_t K>
 __global__ void gemm_kernel(ELE_TYPE* A, ELE_TYPE* B,ELE_TYPE* C){
     // row指的是行上的坐标，而不是指的是第几行
     int x = blockIdx.x*blockDim.x + threadIdx.x;
     // col指的是列上的坐标，而不是第几列
     int y = blockIdx.y*blockDim.y + threadIdx.y;
-
-    __shared__ ELE_TYPE Sa[M/TILE_M][K];
-    __shared__ ELE_TYPE Sb[K][N/TILE_N];
+    constexpr int TILE_M = K/BLOCK_SIZE_N;          ///一个线程需要搬运多少个a矩阵中的元素
+    constexpr int TILE_N = K/BLOCK_SIZE_M;          ///一个线程需要搬运多少个b矩阵中的元素
+    __shared__ ELE_TYPE Sa[BLOCK_SIZE_M][K];
+    __shared__ ELE_TYPE Sb[K][BLOCK_SIZE_N];
     ELE_TYPE sum = 0;
     //先从global mem移动到share mem
     __syncthreads();
+    //每个线程负责
     for(int i = threadIdx.x;i < K;i+=TILE_M){
         Sa[threadIdx.y][i] = A[y*K+i];
     } 
@@ -47,9 +50,9 @@ int main(){
 
     ///这个不加还不能当cuda模板参数
     ///要求必须是编译时期已知且运行时不会变的constant
-    constexpr uint32_t N = 16;
-    constexpr uint32_t M = 32;
-    constexpr uint32_t K = 8;
+    constexpr uint32_t N = 512;
+    constexpr uint32_t M = 256;
+    constexpr uint32_t K = 4;
     int size_A = M*K*sizeof(ELE_TYPE);
     int size_B = K*N*sizeof(ELE_TYPE);
     int size_C = M*N*sizeof(ELE_TYPE);
@@ -66,9 +69,9 @@ int main(){
     cudaMemcpy(d_a,h_a,size_A,cudaMemcpyHostToDevice);
     cudaMemcpy(d_b,h_b,size_B,cudaMemcpyHostToDevice);
     
-    dim3 blockDim(4,4);
-    dim3 gridDim((N+threadperblock.x-1)/threadperblock.x,
-                      (M+threadperblock.y-1)/threadperblock.y );
+    dim3 blockDim(BLOCK_SIZE_N,BLOCK_SIZE_M);
+    dim3 gridDim((N+blockDim.x-1)/blockDim.x,
+                      (M+blockDim.y-1)/blockDim.y );
     //草，大模型给的代码，下面的GridDim和blockDim位置对调了
     //gemm_kernel<M,N,K><<<blockDim,gridDim>>>(d_a,d_b,d_c);
     gemm_kernel<M,N,K><<<gridDim,blockDim>>>(d_a,d_b,d_c);

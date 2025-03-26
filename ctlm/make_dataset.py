@@ -18,8 +18,8 @@ FOR_GEN_TOKENIZER = "for_gen_tokenizer"
 FOR_GEN_PRETRAIN = "for_gen_pretrain"
 FOR_GEN_BEST = "for_gen_best"
 FOR_GEN_BEST_ALL = "for_gen_best_all"
-FOR_GEN_TRAIN_SKETCH = "for_gen_train_sketch"
-FOR_GEN_EVAL_SKETCH = "for_gen_eval_sketch"
+FOR_GEN_FINETUNING_SKETCH = "for_gen_finetuning_sketch"
+#FOR_GEN_EVAL_SKETCH = "for_gen_eval_sketch"
 FOR_GEN_EVALTUNING_SKETCH = "for_gen_evaltuning_sketch"
 
 # 尤其是那些主要用于存储数据的类（类似于 Java 中的 POJO 或 C++ 中的结构体）
@@ -28,7 +28,7 @@ FOR_GEN_EVALTUNING_SKETCH = "for_gen_evaltuning_sketch"
 class ScriptArguments:
     # 通过 field，你可以为每个字段设置默认值、默认值生成方式、是否包含在特定方法（如 __repr__、__eq__ 等）中，甚至定义字段的元数据（metadata）。
     # field 函数来自 dataclasses 模块，它的主要作用是为数据类的字段提供额外的配置。
-    for_type: str = field(metadata={"help": "", "choices": [FOR_GEN_TOKENIZER, FOR_GEN_PRETRAIN, FOR_GEN_BEST, FOR_GEN_TRAIN_SKETCH, FOR_GEN_EVAL_SKETCH, FOR_GEN_EVALTUNING_SKETCH, FOR_GEN_BEST_ALL]})
+    for_type: str = field(metadata={"help": "", "choices": [FOR_GEN_TOKENIZER, FOR_GEN_PRETRAIN, FOR_GEN_BEST, FOR_GEN_FINETUNING_SKETCH, FOR_GEN_EVALTUNING_SKETCH, FOR_GEN_BEST_ALL]})
     dataset_path: str = field(metadata={"help": ""})
     tokenizer_path: str = field(metadata={"help": ""})
     target: str = field(default=None,metadata={"help": ""})
@@ -126,6 +126,8 @@ def for_gen_tokenizer(work_dir):
     virtual_target = os.path.basename(os.path.dirname(work_dir))
     target_info = get_target_info(virtual_target)
     target_part = " ".join(f"{key} {value} " for key, value in target_info.items())
+    ## print(target_part)
+    ## input("continue")
     index = 0
     for line,insts_part, decisions_part, decisions_label, parallel_label, latency  in for_init_lines(lines, path_tuning_record):
         ppt = 'PPT'
@@ -147,12 +149,15 @@ def for_gen_tokenizer(work_dir):
         data_line.pop("latency")
     #     print(data_line)
     # input()
+    # print(prompt_dic_list[2])
+    # print(len(prompt_dic_list))
+    # input()
     return prompt_dic_list
-def for_gen_train_sketch(work_dir, keep_cnt):
+def for_gen_sketch(work_dir, keep_cnt):
     prompt_set = set()
     prompt_lines = []
     lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name = for_init_workload(work_dir)
-    print(script_args.target)
+    # print(script_args.target)
     target_info = get_target_info(script_args.target)
     target_part = " ".join(f"{key} {value} " for key, value in target_info.items())
 
@@ -173,16 +178,60 @@ def for_gen_train_sketch(work_dir, keep_cnt):
         data_list.append(json_line)
     return data_list
 
+def for_gen_best(work_dir):
+    prompt_dic = {}
+    lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name = for_init_workload(work_dir)
+    random.shuffle(lines)
+    min_latency = 1e10
+    for line, insts_part, decisions_part, decisions_label, parallel_label, latency in for_init_lines(lines, path_tuning_record):
+        min_latency = min(min_latency, latency)
+        ppt = 'PPT'
+        data_line = {'text': [task_name_part, shape_part,"rank","1", target_part, insts_part, decisions_part,
+                                    ppt,
+                                    decisions_label, parallel_label],
+                    'latency': latency}
+        ppt_line = {'text': [task_name_part, shape_part,"rank","1", target_part, insts_part, decisions_part, ppt],
+                    'hash': hash,
+                    'task_name': task_name}
+        ppt_line_str = str(ppt_line)
+        if ppt_line_str not in prompt_dic or prompt_dic[ppt_line_str][0] > latency:
+            prompt_dic[ppt_line_str] = (latency, data_line)
 
+    for _, (latency, data_line) in prompt_dic.items():
+        data_line['label'] = min_latency / data_line['latency']
+
+    prompt_dic_list = [x[1] for x in list(prompt_dic.values())]
+    prompt_dic_list.sort(key=lambda x: x['label'], reverse=True)
+    from meta_common import HARDWARE_PLATFORM
+    # if HARDWARE_PLATFORM == 'i7':
+    #     prompt_dic_list = prompt_dic_list[:1]
+    # elif HARDWARE_PLATFORM == 'v100':
+    #     prompt_dic_list = prompt_dic_list[:1]
+    # else:
+    #    assert(False)
+    prompt_dic_list = prompt_dic_list[:1]
+    return prompt_dic_list
 def process_file(args, tmp_folder, for_type, keep_cnt):
     work_dir_i, work_dir = args
-    print('work_dir:', work_dir_i, ' ' * 30, end='\r')
+    # print('work_dir:', work_dir_i, ' ' * 30, end='\r')
     if for_type == FOR_GEN_TOKENIZER or for_type == FOR_GEN_PRETRAIN:
         data_list = for_gen_tokenizer(work_dir)
         data_list = json_to_token(data_list)
+        # print(len(data_list[0]))
+        # print((data_list[0]))
+        # print(len(data_list[1]))
+        # print((data_list[1]))
+        # print(len(data_list[3]))
+        # print((data_list[3]))
+        # print(len(data_list[5]))
+        # print((data_list[5]))
+        # input()
     ##所有需要生成sketch的都在这
-    elif for_type == FOR_GEN_TRAIN_SKETCH or for_type == FOR_GEN_EVAL_SKETCH or for_type == FOR_GEN_EVALTUNING_SKETCH:
-        data_list = for_gen_train_sketch(work_dir, keep_cnt)
+    elif for_type == FOR_GEN_FINETUNING_SKETCH or for_type == FOR_GEN_EVALTUNING_SKETCH:
+        data_list = for_gen_sketch(work_dir, keep_cnt)
+        data_list = json_to_token(data_list)
+    elif for_type == FOR_GEN_BEST or for_type == FOR_GEN_BEST_ALL:
+        data_list = for_gen_best(work_dir)
         data_list = json_to_token(data_list)
     else:
         assert(False)
@@ -203,7 +252,7 @@ def token_files_and_merge(for_type, dirs, save_path, keep_cnt=None):
         pool.map(partial(process_file, tmp_folder=tmp_folder, for_type=for_type, keep_cnt=keep_cnt), enumerate(dirs))
     # 这行代码使用 subprocess.run 函数在 shell 中执行一个命令。具体来说，它将 tmp_folder 目录下所有以 _part 结尾的文件内容合并到一个名为 0_merge 的文件中。
     subprocess.run(f"cat {tmp_folder}/*_part > {filename}", shell=True)
-
+    ## 把一些target信息添加到tokenizer里
     if(script_args.for_type == FOR_GEN_TOKENIZER):
         subprocess.run(f"cat append_to_train_tokenizer.json >> {filename}", shell=True)
     # 将tmp_folder目录下的文件删除
@@ -212,7 +261,16 @@ def token_files_and_merge(for_type, dirs, save_path, keep_cnt=None):
 
 def main():
     if script_args.for_type == FOR_GEN_TOKENIZER:
-        all_dirs = get_all_dirs(script_args.dataset_path)
+        #如果仅挑选一个硬件数据集去train tokenizer的话，最大值可能不是全局最大。
+        #两种方法，一种直接用所有的train tokenizer，另一种就是手动指定max_len，但后一种不知道能不能行
+        #all_dirs = get_all_dirs(script_args.dataset_path)
+         
+        # 先试试第一种
+        all_dirs = []
+        virtual_device_dirs = glob.glob(os.path.join(script_args.dataset_path,"*"))
+        for virtual_device_dir in virtual_device_dirs :
+            all_dirs.extend(get_all_dirs(virtual_device_dir))
+        
         filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.tokenizer_path)
         train_tokenizer([filename], script_args.tokenizer_path, test_length=True)
     elif script_args.for_type == FOR_GEN_PRETRAIN:
@@ -237,7 +295,7 @@ def main():
         filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.save_path)
         # 用filename生成dataset
         make_dataset(filename, script_args.save_path, script_args.tokenizer_path, 'clm')
-    elif script_args.for_type == FOR_GEN_EVAL_SKETCH :
+    elif script_args.for_type == FOR_GEN_EVALTUNING_SKETCH :
         all_dirs = []
         all_dirs.extend(get_all_dirs(script_args.dataset_path))
         print('len all dirs:', len(all_dirs))
@@ -246,13 +304,44 @@ def main():
         #     all_dirs = find_potential_dirs(all_dirs)
         #     print("Find potential dir cnt:", len(all_dirs))
         token_files_and_merge(script_args.for_type, all_dirs, script_args.save_path, keep_cnt=script_args.keep_cnt)
-
-
+    elif script_args.for_type == FOR_GEN_FINETUNING_SKETCH:
+        all_dirs = []
+        all_dirs.extend(get_all_dirs(script_args.dataset_path))
+        print('len all dirs:', len(all_dirs))
+        # hold_out_files_set = set(get_hold_out_five_files(target))
+        # all_dirs_new = []
+        # for dir in all_dirs:
+        #     if os.path.basename(dir) not in hold_out_files_set:
+        #         all_dirs_new.append(dir)
+        # all_dirs = all_dirs_new
+        # print('after hold out, len all dirs:', len(all_dirs))
+        all_dirs_new = []
+        if script_args.test_file_idx is not None:
+            for dir_i, dir in enumerate(all_dirs):
+                ## 这里就和tlm中iterative optimization重点pipeline对应上了。
+                if dir_i % 4 == script_args.test_file_idx % 4:
+                    all_dirs_new.append(dir)
+            all_dirs = all_dirs_new
+            print(f"test_file_idx: {script_args.test_file_idx}, len all_dirs: {len(all_dirs)}")
+        token_files_and_merge(script_args.for_type, all_dirs, script_args.save_path, keep_cnt=script_args.keep_cnt)
+    elif script_args.for_type == FOR_GEN_BEST:
+        all_dirs = []
+        all_dirs.extend(get_all_dirs(script_args.dataset_path))
+        print('len all dirs:', len(all_dirs))
+        # hold_out_files_set = set(get_hold_out_five_files(target))
+        # all_dirs_new = []
+        # for dir in all_dirs:
+        #     if os.path.basename(dir) not in hold_out_files_set:
+        #         all_dirs_new.append(dir)
+        # all_dirs = all_dirs_new
+        # print('after hold out, len all dirs:', len(all_dirs))
+        filename = token_files_and_merge(script_args.for_type, all_dirs, script_args.save_path)
+        make_dataset(filename, script_args.save_path, script_args.tokenizer_path, 'clm', valid_percentage=0)
 
 main()
 # python make_dataset.py \
 # --for_type=for_gen_tokenizer \
-# --dataset_path=/home/houhw/ctlm/ctlm/dataset/measure_records/v100_100_default_100 \
+# --dataset_path=/home/houhw/ctlm/ctlm/dataset/measure_records/ \
 # --tokenizer_path=ctlm_data/ctlm_tokenizer
 
 # python make_dataset.py \

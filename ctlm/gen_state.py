@@ -108,8 +108,6 @@ def worker(err_queue, save_path, sketch_dic_list_i, hash_task_i, dataset_path, g
             def get_measured_set():
                 if allow_repeat:
                     return set()
-                from meta_common import HARDWARE_PLATFORM
-                dataset_path = f'dataset/measure_records/{HARDWARE_PLATFORM}'
                 database_path = os.path.join(dataset_path, database_name)
                 path_tuning_record = os.path.join(database_path, 'database_tuning_record.json')
                 if os.path.exists(path_tuning_record) is False:

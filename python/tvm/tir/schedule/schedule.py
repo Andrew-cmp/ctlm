@@ -314,6 +314,7 @@ class Schedule(Object):
 
     @type_checked
     def get_sref(self, rand_var_or_stmt: Union[BlockRV, LoopRV, Block, For]) -> Optional[StmtSRef]:
+        #返回stmtRef对象
         """Returns the corresponding sref to the given
         1) LoopRV
         2) BlockRV

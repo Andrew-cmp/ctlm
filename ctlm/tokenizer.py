@@ -82,13 +82,17 @@ def test_model_max_length(file, save_path):
     tokenizer = AutoTokenizer.from_pretrained(save_path)
 
     model_max_length = -1
+    model_max_input :str
 
     def tokenize_function(examples):
         encode = tokenizer(examples["text"])
         input_ids = encode["input_ids"]
         nonlocal model_max_length
+        nonlocal model_max_input
         for ids in input_ids:
-            model_max_length = max(model_max_length, len(ids))
+            if(model_max_length<len(ids)):
+                model_max_length = max(model_max_length, len(ids))
+                print(ids)
         return encode
 
     tokenized_datasets = raw_datasets.map(

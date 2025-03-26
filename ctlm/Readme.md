@@ -1,0 +1,2 @@
+measured文件夹下表示训练expert所需要的数据集，在远端测量之后的数据都会传输到本地的此文件夹下。
+ctlm_data下的***_gen_finetuning是远端的测量文件夹

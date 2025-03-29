@@ -8,3 +8,4 @@
 "a100_52_preferl1_67":{"name":"a100_52_preferl1_67","type":"cuda","arch":"sm_80","SM":"56","register":"172","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"},
 "a100_48_default_100":{"name":"a100_100_default_100","type":"cuda","arch":"sm_80","SM":"42","register":"256","sharemem":"164","device_arch":"ampere","cudacore":"160","mem":"1886","GPUclock":"1410","FP32":"19.5"}
 }
+    

@@ -184,3 +184,4 @@ except:
 
 # PYTHONUNBUFFERED=1 python run_measure.py --reg_times=1.5 --cuda_id1=MIG-1225b991-2e5a-522d-bdc9-c524f5000c68 --cuda_id2=MIG-4aacf663-1ed4-5fd6-960a-4009ed0e384e |& tee run.log
 # PYTHONUNBUFFERED=1 python run_measure.py --reg_times=-1 --cuda_id1=MIG-ceaa2e03-b413-597f-8c77-86b869b62981  |& tee run.log
+# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=-1 --cuda_id1=MIG-0c650194-a353-5838-bf84-e51155ede733 --cuda_id2=MIG-ceaa2e03-b413-597f-8c77-86b869b62981 |& tee run.log

@@ -12,6 +12,7 @@ random.seed(66)
 data = glob.glob(os.path.join(source_path,"*"))
 
 # 计算选中元素的数量，60% 的数量
+# 你妈，这里搞成0.5了
 num_elements_to_select = int(len(data) * 0.5)
 
 # 随机选取 60% 的元素

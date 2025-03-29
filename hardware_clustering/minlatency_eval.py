@@ -12,7 +12,7 @@ from meta_common import register_data_path, hold_out_task_files, get_jsondatabas
 import tvm.meta_schedule as ms
 from meta_common import yield_hold_out_five_files
 from glob import glob
-
+import shutil
 import logging
 from tvm.target import Target
 @dataclass
@@ -214,10 +214,15 @@ def main():
             result_dir = os.path.join(os.curdir,f"finetuning_data_on_{target_name}")
             if(os.path.exists(os.path.join(result_dir,model_name))):
                 pass
-            else :
+            else:
                 os.makedirs(os.path.join(result_dir,model_name))
-            database = ms.database.JSONDatabase(work_dir=work_dir)
-            measure_candidates(database,builder,runner,task_record,result_dir)
+                database = ms.database.JSONDatabase(work_dir=work_dir)
+                try:
+                    measure_candidates(database,builder,runner,task_record,result_dir)
+                except Exception as e:
+                    print(f"{model_name} has except:{e},{model_name} dir has been removed")
+                    shutil.rmtree(os.path.join(result_dir,model_name))
+                
     elif(script_args.for_tune == True):
         target_name = get_target_name(script_args.target)
         builder = ms.builder.LocalBuilder(timeout_sec=3000)
@@ -231,10 +236,9 @@ def main():
                 pass
             else :
                 os.makedirs(os.path.join(result_dir,model_name))
-            database = ms.database.JSONDatabase(work_dir=work_dir)
-            
-            saved_dir = os.path.join(result_dir,model_name)
-            tuning_mod(database,saved_dir)
+                database = ms.database.JSONDatabase(work_dir=work_dir)
+                saved_dir = os.path.join(result_dir,model_name)
+                tuning_mod(database,saved_dir)
     else:
         for work_dir in work_dirs:
             min_latency, _ = get_jsondatabase_top1(work_dir)

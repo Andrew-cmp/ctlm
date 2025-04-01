@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional
-from transformers import HfArgumentParser
+import argparse
 import json
 from tvm import auto_scheduler
 import tvm
@@ -15,22 +15,34 @@ from glob import glob
 import shutil
 import logging
 from tvm.target import Target
-@dataclass
-class ScriptArguments:
-    target: str = field(default=False, metadata={"help": "only for_test=true, this can set. target meaning which target do you want to measure with test_dir candidate"})
-
-    # test_file: str = field(default=None, metadata={"help": ""})
-    # for_train: str = field(default=False, metadata={"help": ""})
-    for_test: bool = field(default=False, metadata={"help": "measure test_dir candidate on target"})
-    for_tune: bool = field(default=False, metadata={"help": "tune test_dir mod on target"})
-    # for_testtuning: str = field(default=False, metadata={"help": ""})
-    test_dir: str = field(default=False,metadata={"help":""})
-    batch_size: int = field(default=64,metadata={"help":""})
-    
-    pass
-
-parser = HfArgumentParser(ScriptArguments)
-script_args: ScriptArguments = parser.parse_args_into_dataclasses()[0]
+def _parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--for_test", type=bool,default=False ,help="measure test_dir candidate on target."
+    )    
+    parser.add_argument(
+        "--for_tune", type=bool,default=False ,help="tune test_dir mod on target"
+    )
+    parser.add_argument(
+        "--candidate_cache_dir", type=str, help="Please provide the full path to the candidates."
+    )
+    parser.add_argument(
+        "--result_cache_dir", type=str, help="Please provide the full path to the result database."
+    )
+    parser.add_argument(
+        "--target",
+        type=str,
+        default="nvidia/nvidia-a6000",
+        help="Please specify the target hardware for tuning context.",
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=64,
+        help="The batch size of candidates sent to builder and runner each time.",
+    )
+    return parser.parse_args()
+script_args= _parse_args()
 
 # def read_gen_best_json(json_path):
 #     with open(json_path, "r") as f:
@@ -172,7 +184,9 @@ def get_target_name(target_str):
     return model
 def main():
     print(script_args)
+    print(script_args.target)
 
+    print(type(script_args.target))
     # # Load task registry
     # print("Load all tasks...")
     # tasks = load_and_register_tasks()
@@ -197,21 +211,21 @@ def main():
     #     # test_file = script_args.test_file
     # else:
     #     assert(False)
-    test_dir = script_args.test_dir
+    candidate_cache_dir = script_args.candidate_cache_dir
     print('-' * 50)
-    print("test dir:", script_args.test_dir)
+    print("candidate_cache_dir dir:", script_args.candidate_cache_dir)
     
     workloads_latency = {}
-    work_dirs = glob(os.path.join(test_dir,'*'))
+    work_dirs = glob(os.path.join(candidate_cache_dir,'*'))
     if(script_args.for_test == True):
-        target_name = get_target_name(script_args.target)
         builder = ms.builder.LocalBuilder(timeout_sec=3000)
         runner = ms.runner.LocalRunner(timeout_sec=100)
         task_record = ms.task_scheduler.task_scheduler.TaskRecord(
-        ms.TuneContext(target=(script_args.target)))
+        ms.TuneContext(target=Target(script_args.target)))
+        
         for work_dir in work_dirs:
             model_name = work_dir.split("/")[-1]
-            result_dir = os.path.join(os.curdir,f"finetuning_data_on_{target_name}")
+            result_dir = script_args.result_cache_dir
             if(os.path.exists(os.path.join(result_dir,model_name))):
                 pass
             else:
@@ -224,14 +238,13 @@ def main():
                     shutil.rmtree(os.path.join(result_dir,model_name))
                 
     elif(script_args.for_tune == True):
-        target_name = get_target_name(script_args.target)
         builder = ms.builder.LocalBuilder(timeout_sec=3000)
         runner = ms.runner.LocalRunner(timeout_sec=100)
         task_record = ms.task_scheduler.task_scheduler.TaskRecord(
-        ms.TuneContext(target=(script_args.target)))
+        ms.TuneContext(target=Target(script_args.target)))
         for work_dir in work_dirs:
             model_name = work_dir.split("/")[-1]
-            result_dir = os.path.join(os.curdir,f"tuning_data_on_{target_name}")
+            result_dir = script_args.result_cache_dir
             if(os.path.exists(os.path.join(result_dir,model_name))):
                 pass
             else :
@@ -251,8 +264,17 @@ def main():
 
 if __name__ == "__main__":
     main()
-#python minlatency_eval.py --for_test=true --test_dir=./finetuning_data_on_v100 --target=nvidia/nvidia-a6000 >finetuning_data.log 2>&1
+# python minlatency_eval.py \
+# --for_test=true \
+# --candidate_cache_dir=dataset/test_tmp_to_measure \
+# --result_cache_dir=dataset/test_tmp_measured \
+# --target=nvidia/nvidia-v100 
 
-#CUDA_VISIBLE_DEVICES=3 python minlatency_eval.py --for_tune=true --test_dir=./finetuning_data_on_v100 --target=nvidia/nvidia-a6000 >tuning_data.log 2>&1
+# PYTHONUNBUFFERED=1 python -u minlatency_eval.py \
+# --for_test=true \
+# --candidate_cache_dir=dataset/top_random_sample \
+# --result_cache_dir=dataset/subgragh_4_hc_measured \
+# --target=nvidia/nvidia-v100 >run.log 2>&1
+
 
 

@@ -18,6 +18,7 @@ experiment/measure_data/
 experiment/ctlm_data/
 cuda/gemm_fp16.cu
 cuda/cost_model.py
+hardware_clustering/dataset/*
 hardware_clustering/*_data_on_*
 *.sqlite
 *.nsys-rep

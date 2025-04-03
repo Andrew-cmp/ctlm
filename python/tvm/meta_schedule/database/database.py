@@ -230,6 +230,16 @@ class Database(Object):
             All tuning records from the database.
         """
         return _ffi_api.DatabaseGetAllTuningRecords(self)  # type: ignore # pylint: disable=no-member
+    
+    def get_all_tuning_records_without_rank(self) -> List[TuningRecord]:
+        """Get all the tuning records from the database.
+
+        Returns
+        -------
+        tuning_records : List[TuningRecord]
+            All tuning records from the database.
+        """
+        return _ffi_api.DatabaseGetAllTuningRecordsWithoutRank(self)  # type: ignore # pylint: disable=no-member
 
     def __len__(self) -> int:
         """Get the number of records in the database.

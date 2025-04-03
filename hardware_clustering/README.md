@@ -1,4 +1,8 @@
-dataset/dataset.zip: 来源 tlm_dataset下measure_data中第64、65、66、67的一个聚合，代表第17次微调也是最后一次微调时收集的演示数据,包括调度以及latency。
-finetuning_data_on_a6000 这一批数据在a6000上的实际运行效果
-finetuning_data_on_a6000 这一批数据在v100上的实际运行效果
-turing_data_on_a6000 这一批数据在v100上的实际运行效果
+dataset/origin_dataset: 来源 tlm_dataset下measure_data中第64、65、66、67的一个聚合，代表第17次微调也是最后一次微调时收集的演示数据,包括调度以及latency。
+dataset/random_sample: 对origin_dataset中的trace（张量程序的调度策略）进行random sample
+dataset/top_random_sample: 对origin_dataset中的trace（张量程序的调度策略）先排序，在前一半中的trace中进行random sample
+dataset/topk_sample: 对origin_dataset中的trace（张量程序的调度策略）排序，选出前k个trace。
+dataset/subgragh_4_hc_measured: 各个机器上的此文件夹下保存sample出来的trace的实测值。
+finetuning_data_on_a6000 这一批张量程序及调度在a6000上的实际运行效果
+finetuning_data_on_a6000 这一批张量程序及调度在v100上的实际运行效果
+turing_data_on_a6000 这一批张量程序在a6000

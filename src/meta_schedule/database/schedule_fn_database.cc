@@ -79,7 +79,11 @@ class ScheduleFnDatabaseNode : public DatabaseNode {
     LOG(FATAL) << "NotImplementedError: ScheduleFnDatabase.GetTopK";
     throw;
   }
-
+  ///custom_hou
+  Array<TuningRecord> GetAllTuningRecordsWithoutRank() final {
+    LOG(FATAL) << "NotImplementedError: OrderedUnionDatabase.GetAllTuningRecords";
+    throw;
+  }
   Array<TuningRecord> GetAllTuningRecords() final {
     LOG(FATAL) << "NotImplementedError: ScheduleFnDatabase.GetAllTuningRecords";
     throw;

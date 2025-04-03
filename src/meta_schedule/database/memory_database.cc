@@ -87,7 +87,10 @@ class MemoryDatabaseNode : public DatabaseNode {
       return results;
     }
   }
-
+  Array<TuningRecord> GetAllTuningRecordsWithoutRank() final {
+    LOG(FATAL) << "NotImplementedError: OrderedUnionDatabase.GetAllTuningRecords";
+    throw;
+  }
   Array<TuningRecord> GetAllTuningRecords() final { return records; }
 
   int64_t Size() final { return records.size(); }

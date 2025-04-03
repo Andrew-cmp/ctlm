@@ -85,6 +85,8 @@ class JSONDatabaseNode : public DatabaseNode {
   /*! \brief All the tuning records in the database */
   std::multiset<TuningRecord, SortTuningRecordByMeanRunSecs> tuning_records_;
 
+  std::vector<TuningRecord> custom_tuning_records;
+
   void VisitAttrs(tvm::AttrVisitor* v) {
     v->Visit("path_workload", &path_workload);
     v->Visit("path_tuning_record", &path_tuning_record);
@@ -158,6 +160,15 @@ class JSONDatabaseNode : public DatabaseNode {
     }
     return results;
   }
+///cunstom_hou
+  Array<TuningRecord> GetAllTuningRecordsWithoutRank() {
+    Array<TuningRecord> results;
+    results.reserve(Size());
+    for (const TuningRecord& record : this->custom_tuning_records) {
+      results.push_back(record);
+    }
+    return results;
+  }
 
   int64_t Size() { return tuning_records_.size(); }
 
@@ -220,8 +231,10 @@ Database Database::JSONDatabase(String path_workload, String path_tuning_record,
                        << e.what();
           }
         });
+    n->custom_tuning_records.reserve(records.size());
     for (const TuningRecord& record : records) {
       n->tuning_records_.insert(record);
+      n->custom_tuning_records.push_back(record);
     }
   }
   n->path_workload = path_workload;

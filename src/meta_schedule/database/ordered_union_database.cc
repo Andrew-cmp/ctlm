@@ -60,6 +60,11 @@ class OrderedUnionDatabaseNode : public DatabaseNode {
     LOG(FATAL) << "NotImplementedError: OrderedUnionDatabase.GetTopK";
     throw;
   }
+  ///custom_hou
+  Array<TuningRecord> GetAllTuningRecordsWithoutRank() final {
+    LOG(FATAL) << "NotImplementedError: OrderedUnionDatabase.GetAllTuningRecords";
+    throw;
+  }
 
   Array<TuningRecord> GetAllTuningRecords() final {
     LOG(FATAL) << "NotImplementedError: OrderedUnionDatabase.GetAllTuningRecords";

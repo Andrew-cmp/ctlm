@@ -228,6 +228,10 @@ class DatabaseNode : public runtime::Object {
    * \return An Array of all the tuning records in the database.
    */
   virtual Array<TuningRecord> GetAllTuningRecords() = 0;
+
+  //custom_hou
+  virtual Array<TuningRecord> GetAllTuningRecordsWithoutRank() = 0;
+
   /*!
    * \brief Get the size of the database.
    * \return The size of the database.
@@ -302,6 +306,8 @@ class PyDatabaseNode : public DatabaseNode {
    */
   explicit PyDatabaseNode(String mod_eq_name = "structural");
 
+
+  
   /*!
    * \brief The function type of `HasWorkload` method.
    * \param mod The IRModule to be searched for.
@@ -331,6 +337,11 @@ class PyDatabaseNode : public DatabaseNode {
    * \return An Array of all the tuning records in the database.
    */
   using FGetAllTuningRecords = runtime::TypedPackedFunc<Array<TuningRecord>()>;
+
+  //custom_hou
+  using FGetAllTuningRecordsWithoutRank = runtime::TypedPackedFunc<Array<TuningRecord>()>;
+
+
   /*!
    * \brief The function type of `QueryTuningRecord` method.
    * \param mod The IRModule to be searched for.
@@ -372,6 +383,10 @@ class PyDatabaseNode : public DatabaseNode {
   FCommitTuningRecord f_commit_tuning_record;
   /*! \brief The packed function to the `GetTopK` function. */
   FGetTopK f_get_top_k;
+
+  //custom_hou
+  FGetAllTuningRecordsWithoutRank f_get_all_tuning_records_without_rank;
+
   /*! \brief The packed function to the `GetAllTuningRecords` function. */
   FGetAllTuningRecords f_get_all_tuning_records;
   /*! \brief The packed function to the `QueryTuningRecord` function. */
@@ -424,6 +439,14 @@ class PyDatabaseNode : public DatabaseNode {
         << "PyDatabase's GetAllTuningRecords method not implemented!";
     return f_get_all_tuning_records();
   }
+
+  //custom_hou
+  Array<TuningRecord> GetAllTuningRecordsWithoutRank() final {
+    ICHECK(f_get_all_tuning_records_without_rank != nullptr)
+        << "PyDatabase's GetAllTuningRecords method not implemented!";
+    return f_get_all_tuning_records_without_rank();
+  }
+
 
   Optional<TuningRecord> QueryTuningRecord(const IRModule& mod, const Target& target,
                                            const String& workload_name) final {
@@ -524,6 +547,10 @@ class Database : public runtime::ObjectRef {
                                      PyDatabaseNode::FCommitTuningRecord f_commit_tuning_record,
                                      PyDatabaseNode::FGetTopK f_get_top_k,
                                      PyDatabaseNode::FGetAllTuningRecords f_get_all_tuning_records,
+                                     
+                                     //custom_hou 
+                                     PyDatabaseNode::FGetAllTuningRecordsWithoutRank f_get_all_tuning_records_without_rank,
+
                                      PyDatabaseNode::FQueryTuningRecord f_query_tuning_record,
                                      PyDatabaseNode::FQuerySchedule f_query_schedule,
                                      PyDatabaseNode::FQueryIRModule f_query_ir_module,

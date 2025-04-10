@@ -15,6 +15,7 @@ from glob import glob
 import shutil
 import logging
 from tvm.target import Target
+import sklearn
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -270,11 +271,11 @@ if __name__ == "__main__":
 # --result_cache_dir=dataset/test_tmp_measured \
 # --target=nvidia/nvidia-v100 
 
-# PYTHONUNBUFFERED=1 python -u minlatency_eval.py \
+# CUDA_VISIBLE_DEVICES=2 PYTHONUNBUFFERED=1 python -u minlatency_eval.py \
 # --for_test=true \
 # --candidate_cache_dir=dataset/top_random_sample \
 # --result_cache_dir=dataset/subgragh_4_hc_measured \
-# --target=nvidia/nvidia-v100 >run.log 2>&1
+# --target=nvidia/nvidia-a6000 >run.log 2>&1
 
 
 

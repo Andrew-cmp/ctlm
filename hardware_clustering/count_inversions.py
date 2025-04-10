@@ -1,3 +1,4 @@
+import copy
 def merge_count_split_inv(arr, temp_arr, left, right):
     """
     用于在归并排序中统计逆序对。
@@ -64,14 +65,15 @@ def merge_and_count(arr, temp_arr, left, mid, right):
 
     return inv_count
 
-def count_inversions(arr):
+def count_inversions(arr1):
     """
     计算逆序对的总数
     :param arr: 输入数组
     :return: 逆序对的总数
     """
-    n = len(arr)
+    n = len(arr1)
     temp_arr = [0] * n
+    arr = copy.deepcopy(arr1) 
     return merge_count_split_inv(arr, temp_arr, 0, n-1)
 def main():
     arr1 = [1,2,3,4]

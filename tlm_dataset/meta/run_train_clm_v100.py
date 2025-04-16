@@ -2,6 +2,7 @@ import subprocess, os
 
 # 设置 screen 命令和相关参数
 session_name = os.path.basename(os.path.abspath(__file__))
+session_name = session_name+"tlm"
 log_file = f'{session_name}.log'
 session_name = session_name.replace('.', '_')
 
@@ -19,7 +20,7 @@ echo "#################################################################"
 date
 
 export PYTHONUNBUFFERED=1
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python train_clm.py \
+CUDA_VISIBLE_DEVICES=6,7 python train_clm.py \
                                     --do_train \
                                     --model_type=gpt2 \
                                     --tokenizer_name=meta_data/v100_tokenizer \
@@ -30,7 +31,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python train_clm.py \
                                     --overwrite_output_dir=True \
                                     --save_steps=4000 \
                                     --logging_steps=100 \
-                                    --num_train_epochs=20 \
+                                    --num_train_epochs=2 \
                                     --remove_unused_columns=False \
                                     --learning_rate=5e-5
 

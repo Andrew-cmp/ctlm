@@ -103,7 +103,8 @@ def test_model_max_length(file, save_path):
         desc="Running tokenizer on every text in dataset",
         keep_in_memory=True
     )
-
+    # 为什么这里最多就是589呢
     print("model_max_length:", model_max_length)
+    # 为什么这里最多就是608呢
     tokenizer.model_max_length = ((model_max_length - 1) // 32 + 1) * 32
     tokenizer.save_pretrained(save_path)

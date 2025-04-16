@@ -31,7 +31,6 @@ def exec_cmd_if_error_send_mail(command):
     #     exit()
     return returncode
 
-
 def run_tuning(user,cuda_visible_device,for_type, finetuning_init, testtuning_init, ssh_target, model, target, init_times, finetuning_schedule_times, testtuning_schedule_times):
     #target_tvm = tvm.target.Target(target)
     # 获得TLM生成的tensor program

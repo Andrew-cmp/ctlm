@@ -64,7 +64,7 @@ def for_init_workload(work_dir):
         f.write(lines[0])
     # 相当于每个只挑了一个
     database = ms.database.JSONDatabase(path_workload=path_workload, path_tuning_record=path_tuning_record_1)
-    all_records = database.get_all_tuning_records()
+    all_records = database.get_all_tuning_records_without_rank()
 
     task_name_part = None
     shape_part = []
@@ -119,40 +119,47 @@ def get_target_info(target):
     with open("target.json",'r') as f:
         target_peizhi = json.load(f)
         return target_peizhi[target]
-def for_gen_tokenizer(work_dir):
+def for_gen_pretrain(work_dir):
     lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name = for_init_workload(work_dir)
-    random.shuffle(lines)
-    prompt_dic = {}
+    data_list = []
     virtual_target = os.path.basename(os.path.dirname(work_dir))
     target_info = get_target_info(virtual_target)
     target_part = " ".join(f"{key} {value} " for key, value in target_info.items())
-    ## print(target_part)
-    ## input("continue")
     index = 0
     for line,insts_part, decisions_part, decisions_label, parallel_label, latency  in for_init_lines(lines, path_tuning_record):
         ppt = 'PPT'
-        data_line = {'text': [task_name_part, shape_part, target_part, insts_part, decisions_part,
-                                    ppt,
+        data_list.append({'text': [task_name_part, shape_part, target_part, insts_part, decisions_part,
+                                    ppt, 
                                     decisions_label, parallel_label],
-                    'latency': latency}
-
-        prompt_dic[index] = (latency, data_line)
+                          
+                          'latency': latency})
         index += 1
-    # 将所有的data_line提取出来
-    prompt_dic_list = [x[1] for x in list(prompt_dic.values())]
+    # 插入index
+    for i,  data_line in enumerate(data_list):
+        data_line['text'].insert(3,f"index")
+        data_line['text'].insert(4,f"{i}")
     # 根据lable排序
-    prompt_dic_list.sort(key=lambda x: x['latency'])
-    for i,  data_line in enumerate(prompt_dic_list):
+    data = []
+    data_list.sort(key=lambda x: x['latency'])
+    for i,  data_line in enumerate(data_list):
         data_line['text'].insert(3,f"rank")
         data_line['text'].insert(4,f"{i}")
-        # data_line['rank'] = i
-        data_line.pop("latency")
-    #     print(data_line)
-    # input()
-    # print(prompt_dic_list[2])
-    # print(len(prompt_dic_list))
-    # input()
-    return prompt_dic_list
+        data.append({'text':data_line['text']})
+    random.shuffle(data)
+    return data
+
+def for_gen_tokenizer(work_dir):
+    data_list = []
+    lines, path_tuning_record, path_workload, task_name_part, shape_part, target_part, hash, task_name = for_init_workload(work_dir)
+    virtual_target = os.path.basename(os.path.dirname(work_dir))
+    target_info = get_target_info(virtual_target)
+    target_part = " ".join(f"{key} {value} " for key, value in target_info.items())
+    for line,insts_part, decisions_part, decisions_label, parallel_label, latency  in for_init_lines(lines, path_tuning_record):
+        ppt = 'PPT'
+        data_list.append({'text': [task_name_part, shape_part, target_part, insts_part, decisions_part,
+                                    ppt, 
+                                    decisions_label, parallel_label]})
+    return data_list
 def for_gen_sketch(work_dir, keep_cnt):
     prompt_set = set()
     prompt_lines = []
@@ -214,19 +221,12 @@ def for_gen_best(work_dir):
 def process_file(args, tmp_folder, for_type, keep_cnt):
     work_dir_i, work_dir = args
     # print('work_dir:', work_dir_i, ' ' * 30, end='\r')
-    if for_type == FOR_GEN_TOKENIZER or for_type == FOR_GEN_PRETRAIN:
-        data_list = for_gen_tokenizer(work_dir)
+    if for_type == FOR_GEN_TOKENIZER :
+        data_list = for_gen_pretrain(work_dir)
         data_list = json_to_token(data_list)
-        # print(len(data_list[0]))
-        # print((data_list[0]))
-        # print(len(data_list[1]))
-        # print((data_list[1]))
-        # print(len(data_list[3]))
-        # print((data_list[3]))
-        # print(len(data_list[5]))
-        # print((data_list[5]))
-        # input()
-    ##所有需要生成sketch的都在这
+    elif for_type == FOR_GEN_PRETRAIN:
+        data_list = for_gen_pretrain(work_dir)
+        data_list = json_to_token(data_list)
     elif for_type == FOR_GEN_FINETUNING_SKETCH or for_type == FOR_GEN_EVALTUNING_SKETCH:
         data_list = for_gen_sketch(work_dir, keep_cnt)
         data_list = json_to_token(data_list)
@@ -239,7 +239,7 @@ def process_file(args, tmp_folder, for_type, keep_cnt):
         for data in data_list:
             json.dump(data, f)
             f.write("\n")
-
+## 预训练数据集要不要打散呢
 def token_files_and_merge(for_type, dirs, save_path, keep_cnt=None):
     os.makedirs(save_path, exist_ok=True)
     filename = f"{save_path}/0_merge.json"
@@ -255,6 +255,18 @@ def token_files_and_merge(for_type, dirs, save_path, keep_cnt=None):
     ## 把一些target信息添加到tokenizer里
     if(script_args.for_type == FOR_GEN_TOKENIZER):
         subprocess.run(f"cat append_to_train_tokenizer.json >> {filename}", shell=True)
+    
+    #预训练时将merge后的内容打散。
+    if(script_args.for_type == FOR_GEN_PRETRAIN):
+        
+        with open(filename, 'r') as f:
+            lines = f.read().strip().split('\n')
+        lines = [x for x in lines]
+        random.shuffle(lines)
+        with open(filename, 'w') as f:
+            for data in lines:
+                json.dump(data, f)
+                f.write("\n")
     # 将tmp_folder目录下的文件删除
     shutil.rmtree(tmp_folder)
     return filename

@@ -3,26 +3,22 @@ from multiprocessing import Process, Lock
 from urllib.parse import quote
 import math
 import shutil
+import re
 import argparse
-
-n_part = 8
-
+n_part = 4
 def _parse_args():
     parser = argparse.ArgumentParser()
-
     parser.add_argument(
-        "--target",
-        type=str,
-        required=True,
-        help="Please specify the target hardware for tuning context.",
+        "--reg_times", type=float, help="this vaule is related to mps tool."
     )
-
     parser.add_argument(
-        "--batch_size",
-        type=int,
-        required=True,
-        default=32,
-        help="Please specify the batch_size for tuning context.",
+        "--cuda_id1", type=str, help="this vaule is related to mps tool.",default="-1"
+    )
+    parser.add_argument(
+        "--cuda_id2", type=str, help="this vaule is related to mps tool.",default="-1"
+    )
+    parser.add_argument(
+        "--target", type=str, help="which target you run.",default="-1"
     )
     return parser.parse_args()
 args = _parse_args()
@@ -30,8 +26,7 @@ def exec_cmd_if_error_send_mail(command):
     print("#" * 50)
     print("command:", command)
     returncode = os.system(command)
-    if returncode != 0:
-        os.system(f'curl https://diyi.site/ma?text={quote(command)} --noproxy diyi.site')
+    print("returncode:", returncode)
     return returncode
 
 
@@ -40,9 +35,10 @@ def exec_cmd_if_error_send_mail(command):
 #将待处理目录下的文件分割成若干部分，每部分创建一个新的目录。
 #将每部分的文件复制到相应的新目录。
 #备份原始的待处理目录，将其移动到备份位置。
+# 将to_measure下面的目录分割成n_part个部分，分别为a6000_part_0,a6000_part_1,a6000_part_2等。
 def divide_worker(lock):
     while True:
-        to_measure_list = glob.glob("measure_data/to_measure/*")
+        to_measure_list = glob.glob("./measure_data/to_measure/*")
         ## 对 to_measure_list 进行过滤，移除那些名称中包含 _part_ 或 zip 的文件或目录，确保只处理特定类型的文件。
         ## to_measure_list包含fintuning_0123
         to_measure_list = [x for x in to_measure_list if '_part_' not in x and 'zip' not in x]
@@ -53,8 +49,6 @@ def divide_worker(lock):
                 time.sleep(10)
                 to_measure_dir = to_measure_list[0]
                 tasks = glob.glob(f'{to_measure_dir}/*')
-                # 为什么当len(to_measure_list)=20,n_part=8时，会有一个part没有呢？因为part_len = math.ceil(len(tasks) / n_part) = 3，而到
-                # 第七个的时候就都分配完了，第八个就没有了。
                 part_len = math.ceil(len(tasks) / n_part)
                 for i in range(n_part):
                     dir_i = f"{to_measure_dir}_part_{i}"
@@ -101,11 +95,12 @@ def merge_worker(lock):
 
 
 def worker(gpu_id, lock):
-    time.sleep(11 - gpu_id)
+    time.sleep(9 - 2)
 
     while True:
         with lock:
             to_measure_list = glob.glob("measure_data/to_measure/*_part_*")
+
             to_measure_list.sort()
             to_measure_file = None
             if len(to_measure_list) > 0:
@@ -117,12 +112,20 @@ def worker(gpu_id, lock):
                 exec_cmd_if_error_send_mail(f"mv {to_measure_file} {to_measure_dir_file}")
 
         if to_measure_file:
+            base_name = os.path.basename(to_measure_file)
+            match = re.search(r'part_(\d+)', base_name)
+            part_id = match.group(1)
             measured_tmp_file = os.path.join("measure_data/measured_tmp", os.path.basename(to_measure_file))
-            target = args.target
-            command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --batch_size={args.batch_size} --target={target} --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{gpu_id}.log 2>&1"
-            exec_cmd_if_error_send_mail(command)
-            time.sleep(3)
-
+            print(f"part_id is :{part_id}")
+            moved_dir = "measure_data/moved"
+            while True:
+                command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --result_error_threshold=5 --reg_times={args.reg_times} --moved_dir={moved_dir} --target={args.target} --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{part_id}.log 2>&1"
+                returncode = exec_cmd_if_error_send_mail(command)
+                if(returncode != 0):
+                    time.sleep(3)
+                    returncode = exec_cmd_if_error_send_mail(command)
+                else:
+                    break
             # to_measure_bak_file = os.path.join("measure_data/to_measure_bak", os.path.basename(to_measure_file))
             command = f"rm -rf {to_measure_dir_file}"
             exec_cmd_if_error_send_mail(command)
@@ -148,9 +151,14 @@ os.system(f'mv measure_data/to_measure_*/*_part_* measure_data/to_measure/')
 
 try:
     # 注意，我们再measure_programs中指定了target=a6000，这里指定的target不会生效，只会和文件夹有关。
-    
+
     # 下面的进程都会启动，并同时运行，只有到了p.join时才会阻塞主线程
-    available_ids = [7,6,5,4,3,2,1,0]
+    if(args.cuda_id1 == "-1"):
+        available_ids = [args.cuda_id2]
+    elif(args.cuda_id2 == "-1"):
+        available_ids = [args.cuda_id1]
+    else:
+        available_ids = [args.cuda_id1,args.cuda_id2]
     processes = []
 
     lock = Lock()
@@ -158,7 +166,7 @@ try:
     p = Process(target=divide_worker, args=(lock, ))
     p.start()
     processes.append(p)
-
+    time.sleep(1)
     p = Process(target=merge_worker, args=(lock, ))
     p.start()
     processes.append(p)
@@ -177,4 +185,6 @@ except:
     for p in processes:
         p.terminate()
 
-# PYTHONUNBUFFERED=1 python run_measure.py |& tee run.log
+# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=1.5 --cuda_id1=MIG-1225b991-2e5a-522d-bdc9-c524f5000c68 --cuda_id2=MIG-4aacf663-1ed4-5fd6-960a-4009ed0e384e |& tee run.log
+# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=-1 --cuda_id1=MIG-ceaa2e03-b413-597f-8c77-86b869b62981  |& tee run.log
+# PYTHONUNBUFFERED=1 python run_measure.py --reg_times=-1 --cuda_id1=0 --cuda_id2=1 --target=nvidia/nvidia-a6000 |& tee run.log

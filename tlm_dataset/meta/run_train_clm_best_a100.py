@@ -6,7 +6,6 @@ from meta_common import register_data_path
 @dataclass
 class ScriptArguments:
     target: str = field(metadata={"help": ""})
-    type: str = field(metadata={"help": ""},choice = ["default","finetuning"])
 
 
 parser = HfArgumentParser(ScriptArguments)

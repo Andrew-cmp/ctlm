@@ -21,6 +21,8 @@ cuda/cost_model.py
 hardware_clustering/dataset/*
 hardware_clustering/*_data_on_*
 tvm-build.tar.gz
+
+tlm_dataset_*/*
 *.sqlite
 *.nsys-rep
 tlm_dataset.zip

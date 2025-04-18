@@ -266,7 +266,7 @@ def main():
         shutil.rmtree(script_args.save_path)
     os.makedirs(script_args.save_path)
     from meta_common import HARDWARE_PLATFORM
-    dataset_path = f'dataset/to_measure_programs/{HARDWARE_PLATFORM}'
+    dataset_path = f'dataset/to_measure_programs/v100'
     for parallel_i in range(parallel_cnt):
         device = f'cuda:{parallel_i % num_gpus}'
         sketch_dic_list_i = sketch_dic_list[parallel_i*per_len : (parallel_i+1)*per_len]

@@ -180,6 +180,8 @@ def for_gen_best(work_dir):
         prompt_dic_list = prompt_dic_list[:1]
     elif HARDWARE_PLATFORM == 'v100':
         prompt_dic_list = prompt_dic_list[:1]
+    elif HARDWARE_PLATFORM == 'a100':
+        prompt_dic_list = prompt_dic_list[:1]
     else:
         assert(False)
     # 应该是只返回一个文件中最好的那个
@@ -272,6 +274,7 @@ def main():
         all_dirs = []
         all_dirs.extend(get_all_dirs(script_args.dataset_path))
         print('len all dirs:', len(all_dirs))
+        #target_1 = tvm.target.Target("nvidia/nvidia-v100")
         hold_out_files_set = set(get_hold_out_five_files(target))
         all_dirs_new = []
         for dir in all_dirs:

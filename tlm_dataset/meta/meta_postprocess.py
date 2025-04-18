@@ -13,7 +13,7 @@ import shutil
 @dataclass
 class ScriptArguments:
     target: str = field(metadata={"help": ""})
-
+    type: str = field(metadata={"help": "","choices" : ["default","finetuning"]})
 
 def main():
     parser = HfArgumentParser(ScriptArguments)
@@ -55,7 +55,13 @@ def main():
                 database_dic[task_name][1] += records_str
 
     for task_name, (workload_str, records_str) in tqdm.tqdm(database_dic.items()):
-        work_dir = f"{MEASURE_RECORD_FOLDER}/{task_name}"
+        from meta_common import CURRENT_DATASET_FOLDER
+        from meta_common import MEASURE_RECORD_FOLDER
+        if script_args.type == 'default':
+            work_dir = f"{MEASURE_RECORD_FOLDER}/{task_name}"
+        else:
+            work_dir = f"{CURRENT_DATASET_FOLDER}/{MEASURE_RECORD_FOLDER}/{task_name}"
+            
         os.makedirs(work_dir)
         path_tuning_record = os.path.join(work_dir, 'database_tuning_record.json')
         path_workload = os.path.join(work_dir, 'database_workload.json')

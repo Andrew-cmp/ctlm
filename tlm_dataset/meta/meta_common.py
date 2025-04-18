@@ -12,7 +12,7 @@ NETWORK_INFO_FOLDER = None
 TO_MEASURE_PROGRAM_FOLDER = None
 MEASURE_RECORD_FOLDER = None
 HARDWARE_PLATFORM = None
-
+CURRENT_DATASET_FOLDER = None
 
 def clean_name(x):
     x = str(x)
@@ -48,16 +48,19 @@ def register_data_path(target_str):
     assert(model != 'None')
 
     print(f'register data path: {model}')
-    global NETWORK_INFO_FOLDER, TO_MEASURE_PROGRAM_FOLDER, MEASURE_RECORD_FOLDER, HARDWARE_PLATFORM
-    NETWORK_INFO_FOLDER = f"dataset/network_info/{model}"
+
+    global NETWORK_INFO_FOLDER, TO_MEASURE_PROGRAM_FOLDER, MEASURE_RECORD_FOLDER, HARDWARE_PLATFORM,CURRENT_DATASET_FOLDER
+    HARDWARE_PLATFORM = model
+    CURRENT_DATASET_FOLDER = f'/home/houhw/ctlm/tlm_dataset_{model}'
+    NETWORK_INFO_FOLDER = f"dataset/network_info/v100"
     TO_MEASURE_PROGRAM_FOLDER = f"dataset/to_measure_programs/{model}"
     MEASURE_RECORD_FOLDER = f"dataset/measure_records/{model}"
-    HARDWARE_PLATFORM = model
 
 
 def get_task_info_filename(network_key, target):
     assert(NETWORK_INFO_FOLDER is not None)
     network_task_key = (network_key,) + (str(target.kind),)
+    #network_task_key = (network_key,) + ("v100",)
     return f"{NETWORK_INFO_FOLDER}/{clean_name(network_task_key)}.task.pkl"
 
 
@@ -124,7 +127,6 @@ def hold_out_task_files(target):
 
 def yield_hold_out_five_files(target):
     files = hold_out_task_files(target)
-
     for workload, file in files.items():
         tasks_part = pickle.load(open(file, "rb"))
         hashes = get_task_hashes(tasks_part)

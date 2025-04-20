@@ -114,6 +114,7 @@ TVM_REGISTER_CUDA_TAG("nvidia/tesla-c2070", "sm_20", 49152, 32768);
 TVM_REGISTER_CUDA_TAG("nvidia/nvidia-a100", "sm_80", 49152, 65536);
 
 
+TVM_REGISTER_CUDA_TAG("nvidia/rtx-4090", "sm_89", 49152, 65536);
 TVM_REGISTER_CUDA_TAG("nvidia/nvidia-a6000", "sm_86", 49152, 65536);
 
 TVM_REGISTER_CUDA_TAG("nvidia/nvidia-a40", "sm_86", 49152, 65536);

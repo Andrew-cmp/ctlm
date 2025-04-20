@@ -175,17 +175,18 @@ def for_gen_best(work_dir):
     # 根据lable排序
     prompt_dic_list.sort(key=lambda x: x['label'], reverse=True)
     # 取排名第一的
-    from meta_common import HARDWARE_PLATFORM
-    if HARDWARE_PLATFORM == 'i7':
-        prompt_dic_list = prompt_dic_list[:1]
-    elif HARDWARE_PLATFORM == 'v100':
-        prompt_dic_list = prompt_dic_list[:1]
-    elif HARDWARE_PLATFORM == 'a100':
-        prompt_dic_list = prompt_dic_list[:1]
-    elif HARDWARE_PLATFORM == 'a6000':
-        prompt_dic_list = prompt_dic_list[:1]
-    else:
-        assert(False)
+    # from meta_common import HARDWARE_PLATFORM
+    # if HARDWARE_PLATFORM == 'i7':
+    #     prompt_dic_list = prompt_dic_list[:1]
+    # elif HARDWARE_PLATFORM == 'v100':
+    #     prompt_dic_list = prompt_dic_list[:1]
+    # elif HARDWARE_PLATFORM == 'a100':
+    #     prompt_dic_list = prompt_dic_list[:1]
+    # elif HARDWARE_PLATFORM == 'a6000':
+    #     prompt_dic_list = prompt_dic_list[:1]
+    # else:
+    #     assert(False)
+    prompt_dic_list = prompt_dic_list[:1]
     # 应该是只返回一个文件中最好的那个
     return prompt_dic_list
 

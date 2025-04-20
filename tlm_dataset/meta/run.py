@@ -443,6 +443,16 @@ def main():
         init_times = 2
         finetuning_schedule_times = 1e10
         testtuning_schedule_times = 1e10
+    elif HARDWARE_PLATFORM == 'v100':
+        ssh_target = '-p 41103 root@region-9.autodl.pro'
+        init_times = 2
+        finetuning_schedule_times = 1e10
+        testtuning_schedule_times = 1e10
+    elif HARDWARE_PLATFORM == '4090':
+        ssh_target = '-p 55876 root@connect.bjb1.seetacloud.com'
+        init_times = 2
+        finetuning_schedule_times = 1e10
+        testtuning_schedule_times = 1e10
     else:
         assert(False)
     run_tuning(current_dataset_path,script_args.for_type, script_args.finetuning_init, script_args.testtuning_init, ssh_target, HARDWARE_PLATFORM, script_args.target, init_times, finetuning_schedule_times, testtuning_schedule_times)

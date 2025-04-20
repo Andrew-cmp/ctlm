@@ -10,7 +10,7 @@ from multiprocessing import Process
 
 FOR_FINETUNING = "for_finetuning"
 FOR_TESTTUNING = "for_testtuning"
-device_id_all = "6,5,4,3,2,1,0"
+device_id_all = "0,1,2,3"
 
 
 @dataclass
@@ -76,29 +76,29 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                 python meta_make_dataset.py \
                 --for_type=for_gen_evaltuning_sketch \
                 --target="{target}" \
-                --dataset_path=dataset/to_measure_programs/{model} \
-                --tokenizer_path=meta_data/{model}_tokenizer \
-                --save_path=meta_data/{model}_gen_evaltuning \
+                --dataset_path=dataset/to_measure_programs/v100 \
+                --tokenizer_path=meta_data/v100_tokenizer \
+                --save_path={current_dataset_path}/meta_data/{model}_gen_evaltuning \
                 --keep_cnt=64
             '''
             exec_cmd_if_error_send_mail(command)
 
             command = f'''
                 CUDA_VISIBLE_DEVICES={device_id_all} python meta_gen_state.py \
-                --model_name_or_path=meta_data/clm_gen_best_{model} \
-                --sketch_path=meta_data/{model}_gen_evaltuning/0_merge.json \
-                --save_path=meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx}  \
+                --model_name_or_path={current_dataset_path}/meta_data/clm_gen_best_{model} \
+                --sketch_path={current_dataset_path}/meta_data/{model}_gen_evaltuning/0_merge.json \
+                --save_path={current_dataset_path}/meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx}  \
                 --allow_repeat=True \
                 --target="{target}" \
                 --keep_cnt=32
             '''
             exec_cmd_if_error_send_mail(command)
 
-            command = f'cd meta_data/{model}_gen_evaltuning; zip -q -r testtuning_{test_file_idx}.zip testtuning_{test_file_idx}/'
+            command = f'cd {current_dataset_path}/meta_data/{model}_gen_evaltuning; zip -q -r testtuning_{test_file_idx}.zip testtuning_{test_file_idx}/'
             exec_cmd_if_error_send_mail(command)
-            command = f'rsync meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx}.zip {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/to_measure/testtuning_{test_file_idx}.zip'
+            command = f'rsync {current_dataset_path}/meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx}.zip {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/to_measure/testtuning_{test_file_idx}.zip'
             exec_cmd_if_error_send_mail(command)
-            command = f'rm meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx}.zip'
+            command = f'rm {current_dataset_path}/meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx}.zip'
             exec_cmd_if_error_send_mail(command)
             command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/to_measure; unzip -q -o testtuning_{test_file_idx}.zip; rm testtuning_{test_file_idx}.zip"'
             exec_cmd_if_error_send_mail(command)
@@ -159,7 +159,7 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                         '''
                         exec_cmd_if_error_send_mail(command)
                         
-                        exec_cmd_if_error_send_mail(f'python run_train_clm_best_{model}.py --target={target}')
+                        exec_cmd_if_error_send_mail(f'python run_train_clm_best.py --target={target}')
 
                         if test_file_idx + init_times < finetuning_schedule_times:
                             command = f'''
@@ -198,6 +198,17 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
 
                         # if test_file_idx >= (finetuning_schedule_times - 1) and test_file_idx % 4 == 3:
                         if test_file_idx % 4 == 3:
+                        
+                            command = f'''
+                                python meta_make_dataset.py \
+                                --for_type=for_gen_eval_sketch \
+                                --target="{target}" \
+                                --dataset_path=dataset/to_measure_programs/v100 \
+                                --tokenizer_path=meta_data/v100_tokenizer \
+                                --save_path={current_dataset_path}/meta_data/{model}_gen_eval \
+                                --keep_cnt=64
+                            '''
+                            exec_cmd_if_error_send_mail(command)
                             command = f'''
                                 CUDA_VISIBLE_DEVICES={device_id_all} python meta_gen_state.py \
                                 --model_name_or_path={current_dataset_path}/meta_data/clm_gen_best_{model} \
@@ -218,6 +229,7 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                             command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/to_measure; unzip -q -o 0_test_{test_file_idx}.zip; rm 0_test_{test_file_idx}.zip"'
                             exec_cmd_if_error_send_mail(command)
 
+                        time.sleep(100)
                         command = f'''
                             CUDA_VISIBLE_DEVICES={device_id_all} python meta_gen_state.py \
                             --model_name_or_path={current_dataset_path}/meta_data/clm_gen_best_{model} \
@@ -247,9 +259,9 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                     elif "0_test_" in file_path:
                         command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; zip -q -r {file_path}.zip {file_path}/"'
                         exec_cmd_if_error_send_mail(command)
-                        command = f'rsync {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/measured/{file_path}.zip measured/{file_path}.zip'
+                        command = f'rsync {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/measured/{file_path}.zip {current_dataset_path}/measured/{file_path}.zip'
                         exec_cmd_if_error_send_mail(command)
-                        command = f'cd measured; unzip -q -o {file_path}.zip; rm {file_path}.zip'
+                        command = f'cd {current_dataset_path}/measured; unzip -q -o {file_path}.zip; rm {file_path}.zip'
                         exec_cmd_if_error_send_mail(command)
                         command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; rm {file_path}.zip"'
                         exec_cmd_if_error_send_mail(command)
@@ -257,11 +269,11 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                         test_file_idx = int(os.path.splitext(file_path)[0][len("0_test_"):])
                         print(f"Test file: {file_path}")
 
-                        command = f'rm -rf meta_data/measure_data_{model}/{file_path}; mv measured/{file_path} meta_data/measure_data_{model}/{file_path}'
+                        command = f'rm -rf {current_dataset_path}/meta_data/measure_data_{model}/{file_path}; mv {current_dataset_path}/measured/{file_path} {current_dataset_path}/meta_data/measure_data_{model}/{file_path}'
                         exec_cmd_if_error_send_mail(command)
                         
                         from meta_utils import add_test_dirs
-                        add_test_dirs(f"meta_data/measure_data_{model}/{file_path}")
+                        add_test_dirs(f"{current_dataset_path}/meta_data/measure_data_{model}/{file_path}")
                         
                         command = f'python meta_speedup_eval.py --target="{target}" --for_test=True >> meta_speedup_eval_{target_tvm.kind.name}.log 2>&1'
                         exec_cmd_if_error_send_mail(command)
@@ -269,14 +281,14 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                         command = f'curl https://diyi.site/ma?text=0_test_done --noproxy diyi.site'
                         exec_cmd_if_error_send_mail(command)
 
-                        command = f'ssh {ssh_target} "cd tlm/meta/measure_data/measured; rm -rf ../moved/{file_path}; mv {file_path} ../moved/{file_path}"'
+                        command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; rm -rf ../moved/{file_path}; mv {file_path} ../moved/{file_path}"'
                         exec_cmd_if_error_send_mail(command)
                     elif "testtuning_" in file_path:
                         command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; zip -q -r {file_path}.zip {file_path}/"'
                         exec_cmd_if_error_send_mail(command)
-                        command = f'rsync {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/measured/{file_path}.zip measured/{file_path}.zip'
+                        command = f'rsync {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/measured/{file_path}.zip {current_dataset_path}/measured/{file_path}.zip'
                         exec_cmd_if_error_send_mail(command)
-                        command = f'cd measured; unzip -q -o {file_path}.zip; rm {file_path}.zip'
+                        command = f'cd {current_dataset_path}/measured; unzip -q -o {file_path}.zip; rm {file_path}.zip'
                         exec_cmd_if_error_send_mail(command)
                         command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; rm {file_path}.zip"'
                         exec_cmd_if_error_send_mail(command)
@@ -291,25 +303,25 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                             continue
                         want_idx += 1
 
-                        command = f'rm -rf meta_data/measure_data_{model}/{file_path}; mv measured/{file_path} meta_data/measure_data_{model}/{file_path}'
+                        command = f'rm -rf {current_dataset_path}/meta_data/measure_data_{model}/{file_path}; mv {current_dataset_path}/measured/{file_path} {current_dataset_path}/meta_data/measure_data_{model}/{file_path}'
                         exec_cmd_if_error_send_mail(command)
 
                         from meta_utils import add_testtuning_dirs
-                        add_testtuning_dirs(f"meta_data/measure_data_{model}/{file_path}")
+                        add_testtuning_dirs(f"{current_dataset_path}/meta_data/measure_data_{model}/{file_path}")
 
-                        exec_cmd_if_error_send_mail(f'python meta_postprocess.py --target="{target}"')
+                        exec_cmd_if_error_send_mail(f'python meta_postprocess.py --type=finetuning --target="{target}"')
 
                         command = f'''
                             python meta_make_dataset.py \
                             --for_type=for_gen_best_all \
                             --target="{target}" \
-                            --dataset_path=dataset/measure_records/{model} \
-                            --tokenizer_path=meta_data/{model}_tokenizer \
-                            --save_path=meta_data/{model}_gen_best
+                            --dataset_path={current_dataset_path}/dataset/measure_records/{model}  \
+                            --tokenizer_path=meta_data/v100_tokenizer \
+                            --save_path={current_dataset_path}/meta_data/{model}_gen_best_all
                         '''
                         exec_cmd_if_error_send_mail(command)
 
-                        exec_cmd_if_error_send_mail(f'python run_train_clm_best_{model}.py')
+                        exec_cmd_if_error_send_mail(f'python run_train_clm_best.py --target="{target}')
 
                         exec_cmd_if_error_send_mail(f'python meta_task_sheduler.py --target="{target}" --for_testtuning=True')
 
@@ -333,9 +345,9 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                                 python meta_make_dataset.py \
                                 --for_type=for_gen_evaltuning_sketch \
                                 --target="{target}" \
-                                --dataset_path=dataset/to_measure_programs/{model} \
-                                --tokenizer_path=meta_data/{model}_tokenizer \
-                                --save_path=meta_data/{model}_gen_evaltuning \
+                                --dataset_path=dataset/to_measure_programs/v100 \
+                                --tokenizer_path=meta_data/v100_tokenizer \
+                                --save_path={current_dataset_path}/meta_data/{model}_gen_evaltuning \
                                 --keep_cnt={128*keep_cnt_factor} \
                                 --schedule_file_path=meta_task_sheduler_{HARDWARE_PLATFORM}.pkl
                             '''
@@ -364,20 +376,20 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
 
                         command = f'''
                             CUDA_VISIBLE_DEVICES={device_id_all} python meta_gen_state.py \
-                            --model_name_or_path=meta_data/clm_gen_best_{model} \
-                            --sketch_path=meta_data/{model}_gen_evaltuning/0_merge.json \
-                            --save_path=meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx + init_times} \
+                            --model_name_or_path={current_dataset_path}/meta_data/clm_gen_best_{model} \
+                            --sketch_path={current_dataset_path}/meta_data/{model}_gen_evaltuning/0_merge.json \
+                            --save_path={current_dataset_path}/meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx + init_times} \
                             --allow_repeat=False \
                             --target="{target}" \
                             --keep_cnt={64*keep_cnt_factor}
                         '''
                         exec_cmd_if_error_send_mail(command)
 
-                        command = f'cd meta_data/{model}_gen_evaltuning; zip -q -r testtuning_{test_file_idx + init_times}.zip testtuning_{test_file_idx + init_times}/'
+                        command = f'cd {current_dataset_path}/meta_data/{model}_gen_evaltuning; zip -q -r testtuning_{test_file_idx + init_times}.zip testtuning_{test_file_idx + init_times}/'
                         exec_cmd_if_error_send_mail(command)
-                        command = f'rsync meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx + init_times}.zip {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/to_measure/testtuning_{test_file_idx + init_times}.zip'
+                        command = f'rsync {current_dataset_path}/meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx + init_times}.zip {ssh_target}:~/ctlm/tlm_dataset/meta/measure_data/to_measure/testtuning_{test_file_idx + init_times}.zip'
                         exec_cmd_if_error_send_mail(command)
-                        command = f'rm meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx + init_times}.zip'
+                        command = f'rm {current_dataset_path}/meta_data/{model}_gen_evaltuning/testtuning_{test_file_idx + init_times}.zip'
                         exec_cmd_if_error_send_mail(command)
                         command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/to_measure; unzip -q -o testtuning_{test_file_idx + init_times}.zip; rm testtuning_{test_file_idx + init_times}.zip"'
                         exec_cmd_if_error_send_mail(command)
@@ -385,13 +397,13 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
                         command = f'python meta_speedup_eval.py --target="{target}" --for_testtuning=True >> meta_speedup_eval_{target_tvm.kind.name}_testtuning.log 2>&1'
                         exec_cmd_if_error_send_mail(command)
 
-                        command = f'ssh {ssh_target} "cd tlm/meta/measure_data/measured; rm -rf ../moved/{file_path}; mv {file_path} ../moved/{file_path}"'
+                        command = f'ssh {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; rm -rf ../moved/{file_path}; mv {file_path} ../moved/{file_path}"'
                         exec_cmd_if_error_send_mail(command)
                     else:
                         print(f"Invalid file: {file_path}")
 
             print("sleep...")
-            time.sleep(10)
+            time.sleep(100)
 
 def main():
     parser = HfArgumentParser(ScriptArguments)

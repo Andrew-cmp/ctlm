@@ -87,8 +87,11 @@ def main():
         from meta_utils import get_test_dirs
         test_dir = get_test_dirs()[-1]
     elif script_args.for_testtuning:
+        #from meta_common import HARDWARE_PLATFORM
+        # test_dir = f'dataset/measure_records/{HARDWARE_PLATFORM}'
+        from meta_common import CURRENT_DATASET_FOLDER
         from meta_common import HARDWARE_PLATFORM
-        test_dir = f'dataset/measure_records/{HARDWARE_PLATFORM}'
+        test_dir = f'{CURRENT_DATASET_FOLDER}/dataset/measure_records/{HARDWARE_PLATFORM}'
         from meta_utils import get_testtuning_dirs
         print('get_testtuning_dirs', get_testtuning_dirs()[-1])
     elif script_args.test_file:

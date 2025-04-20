@@ -15,7 +15,7 @@ from meta_common import CURRENT_DATASET_FOLDER
 from meta_common import HARDWARE_PLATFORM
 
 # 设置 screen 命令和相关参数
-session_name = os.path.basename(os.path.abspath(__file__))
+session_name = os.path.basename(os.path.abspath(__file__))+f"_{HARDWARE_PLATFORM}"
 log_file = f'{session_name}.log'
 session_name = session_name.replace('.', '_')
 
@@ -33,7 +33,7 @@ echo "#################################################################"
 date
 
 export PYTHONUNBUFFERED=1
-CUDA_VISIBLE_DEVICES=7,6,5,4 python train_clm.py \
+CUDA_VISIBLE_DEVICES=0,1,2,3 python train_clm.py \
                                     --do_train \
                                     --model_type=gpt2 \
                                     --tokenizer_name=meta_data/v100_tokenizer \

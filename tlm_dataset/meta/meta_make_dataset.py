@@ -182,6 +182,8 @@ def for_gen_best(work_dir):
         prompt_dic_list = prompt_dic_list[:1]
     elif HARDWARE_PLATFORM == 'a100':
         prompt_dic_list = prompt_dic_list[:1]
+    elif HARDWARE_PLATFORM == 'a6000':
+        prompt_dic_list = prompt_dic_list[:1]
     else:
         assert(False)
     # 应该是只返回一个文件中最好的那个

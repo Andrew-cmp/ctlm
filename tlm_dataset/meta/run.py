@@ -10,7 +10,7 @@ from multiprocessing import Process
 
 FOR_FINETUNING = "for_finetuning"
 FOR_TESTTUNING = "for_testtuning"
-device_id_all = "0,1,2,3"
+device_id_all = "2,3,4,5"
 
 
 @dataclass
@@ -467,3 +467,5 @@ if __name__ == "__main__":
 # PYTHONUNBUFFERED=1 python run.py --target="nvidia/nvidia-v100" --for_type=for_finetuning --finetuning_init=True |& tee run_v100.log
 # PYTHONUNBUFFERED=1 python run.py --target="nvidia/nvidia-a100" --for_type=for_finetuning --finetuning_init=False |& tee run_a100.log
 # PYTHONUNBUFFERED=1 python run.py --target="nvidia/nvidia-a6000" --for_type=for_finetuning --finetuning_init=False |& tee run_a6000.log
+# PYTHONUNBUFFERED=1 python run.py --target="nvidia/nvidia-v100" --for_type=for_finetuning --finetuning_init=True |& tee run_v100.log
+# PYTHONUNBUFFERED=1 python run.py --target="nvidia/nvidia-v100" --for_type=for_finetuning --finetuning_init=True |& tee run_v100.log

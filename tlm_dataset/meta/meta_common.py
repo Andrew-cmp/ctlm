@@ -41,7 +41,7 @@ def remove_trailing_numbers(s):
 
 def register_data_path(target_str):
     assert(isinstance(target_str, str))
-    model_list = ['i7', 'v100', 'a100', '2080', 'None','a6000','Xeon-Platinum-8488C']
+    model_list = ['i7', 'v100', 'a100', '2080', 'None','a6000','4090','t4','a40','l20','l40','4090d','3090']
     for model in model_list:
         if model in target_str:
             break

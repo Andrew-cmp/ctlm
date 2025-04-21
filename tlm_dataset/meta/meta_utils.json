@@ -1,7 +1,9 @@
 {
   "v100": {
     "finetuning_dirs": [
-      "meta_data/measure_data_v100/finetuning_0"
+      "meta_data/measure_data_v100/finetuning_0",
+      "/home/houhw/ctlm/tlm_dataset_v100/meta_data/measure_data_v100/finetuning_0",
+      "/home/houhw/ctlm/tlm_dataset_v100/meta_data/measure_data_v100/finetuning_1"
     ]
   },
   "a100": {
@@ -20,6 +22,12 @@
     "finetuning_dirs": [
       "/home/houhw/ctlm/tlm_dataset_a6000/meta_data/measure_data_a6000/finetuning_0",
       "/home/houhw/ctlm/tlm_dataset_a6000/meta_data/measure_data_a6000/finetuning_1"
+    ]
+  },
+  "4090": {
+    "finetuning_dirs": [
+      "/home/houhw/ctlm/tlm_dataset_4090/meta_data/measure_data_4090/finetuning_0",
+      "/home/houhw/ctlm/tlm_dataset_4090/meta_data/measure_data_4090/finetuning_1"
     ]
   }
 }

@@ -20,6 +20,9 @@ def _parse_args():
     parser.add_argument(
         "--target", type=str, help="which target you run.",default="-1"
     )
+    parser.add_argument(
+        "--cores", type=str,choices=["physical","logical"], help="",default="logical"
+    )
     return parser.parse_args()
 args = _parse_args()
 def exec_cmd_if_error_send_mail(command):
@@ -119,7 +122,7 @@ def worker(gpu_id, lock):
             print(f"part_id is :{part_id}")
             moved_dir = "measure_data/moved"
             while True:
-                command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --result_error_threshold=5 --reg_times={args.reg_times} --moved_dir={moved_dir} --target={args.target} --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{part_id}.log 2>&1"
+                command = f"CUDA_VISIBLE_DEVICES={gpu_id} python measure_programs.py --cores={args.cores} --result_error_threshold=5 --reg_times={args.reg_times} --moved_dir={moved_dir} --target={args.target} --candidate_cache_dir={to_measure_dir_file} --result_cache_dir={measured_tmp_file} > run_{part_id}.log 2>&1"
                 returncode = exec_cmd_if_error_send_mail(command)
                 if(returncode != 0):
                     time.sleep(3)

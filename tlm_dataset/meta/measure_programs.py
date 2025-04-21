@@ -10,6 +10,8 @@ import shutil
 import tvm
 import json
 import math
+from tvm.meta_schedule.utils import cpu_count
+
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -65,6 +67,13 @@ def _parse_args():
         type=int,
         default=64,
         help="The batch size of candidates sent to builder and runner each time.",
+    )
+    parser.add_argument(
+        "--cores",
+        type=str,
+        choices = ["physical","logical"],
+        default="physical",
+        help="",
     )
     parser.add_argument(
         "--reg_times",
@@ -212,7 +221,12 @@ args = _parse_args()  # pylint: disable=invalid-name
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    builder = ms.builder.LocalBuilder(timeout_sec=3000)
+    if(args.cores == "physical"):
+        cpu_cores = cpu_count(False)
+    else:
+        cpu_cores = cpu_count(True)
+        
+    builder = ms.builder.LocalBuilder(timeout_sec=3000,max_workers=cpu_cores)
     runner = ms.runner.LocalRunner(timeout_sec=100)
     if not os.path.isdir(args.candidate_cache_dir):
         raise Exception("Please provide a correct candidate cache dir.")

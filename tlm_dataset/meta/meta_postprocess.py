@@ -22,12 +22,17 @@ def main():
     register_data_path(script_args.target)
     script_args.target = tvm.target.Target(script_args.target)
 
-    from meta_common import MEASURE_RECORD_FOLDER, clean_name
-    assert(MEASURE_RECORD_FOLDER is not None)
-
-    dirs = glob.glob(f'{MEASURE_RECORD_FOLDER}/*')
-    for dir in dirs:
-        shutil.rmtree(dir)
+    from meta_common import MEASURE_RECORD_FOLDER, clean_name,CURRENT_DATASET_FOLDER
+    if script_args.type == 'default':
+        assert(MEASURE_RECORD_FOLDER is not None)
+        dirs = glob.glob(f'{MEASURE_RECORD_FOLDER}/*')
+        for dir in dirs:
+            shutil.rmtree(dir)
+    else:
+        assert(CURRENT_DATASET_FOLDER is not None)
+        dirs = glob.glob(f'{CURRENT_DATASET_FOLDER}/{MEASURE_RECORD_FOLDER}/*')
+        for dir in dirs:
+            shutil.rmtree(dir)
     dirs = []
     from meta_utils import get_finetuning_dirs, get_testtuning_dirs
     dirs.extend(get_finetuning_dirs())

@@ -253,8 +253,7 @@ def run_tuning(current_dataset_path,for_type, finetuning_init, testtuning_init, 
 
                         # exec_cmd_if_error_send_mail(f'rm clm_gen_best_{model}/*bin')
 
-                        #command = f'ssh -p {port} {ssh_target} "cd ~/ctlm/meta/measure_data/measured; rm -rf ../moved/{file_path}; mv {file_path} ../moved/{file_path}"'
-                        command = f'ssh -p {port} {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; mv {file_path} ../moved/{file_path}"'
+                        command = f'ssh -p {port} {ssh_target} "cd ~/ctlm/tlm_dataset/meta/measure_data/measured; rm -rf ../moved/{file_path}; mv {file_path} ../moved/{file_path}"'
                         exec_cmd_if_error_send_mail(command)
 
                     elif "0_test_" in file_path:

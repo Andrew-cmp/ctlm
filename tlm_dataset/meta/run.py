@@ -429,8 +429,10 @@ def main():
     #os.makedirs(f'meta_data/measure_data_{HARDWARE_PLATFORM}', exist_ok=True)
 
     if HARDWARE_PLATFORM == 'a100':
-        ssh_target = 'root@region-3.seetacloud.com'
-        port = "55597"
+        # ssh_target = 'root@region-3.seetacloud.com'
+        # port = "55597"
+        ssh_target = 'hwhu@172.16.120.28'
+        port = "22"
         init_times = 2
         finetuning_schedule_times = 1e10
         testtuning_schedule_times = 1e10

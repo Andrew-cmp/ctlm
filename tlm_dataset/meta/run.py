@@ -10,7 +10,7 @@ from multiprocessing import Process
 
 FOR_FINETUNING = "for_finetuning"
 FOR_TESTTUNING = "for_testtuning"
-device_id_all = "2,3,4,5,6,7"
+device_id_all = "2,3,4,5,6"
 
 
 @dataclass
@@ -451,6 +451,18 @@ def main():
     elif HARDWARE_PLATFORM == 'v100':
         ssh_target = 'root@region-9.autodl.pro'
         port = "41103"
+        init_times = 2
+        finetuning_schedule_times = 1e10
+        testtuning_schedule_times = 1e10
+    elif HARDWARE_PLATFORM == 't4':
+        ssh_target = 'root@region-9.autodl.pro'
+        port = "39896"
+        init_times = 2
+        finetuning_schedule_times = 1e10
+        testtuning_schedule_times = 1e10
+    elif HARDWARE_PLATFORM == 'xp':
+        ssh_target = 'root@connect.nmb1.seetacloud.com'
+        port = "19525"
         init_times = 2
         finetuning_schedule_times = 1e10
         testtuning_schedule_times = 1e10

@@ -268,6 +268,8 @@ def main():
             print(f"Failed task is {model_name}")
             source_dir = os.path.join(args.candidate_cache_dir,model_name)
             destination_dir = os.path.join(args.moved_dir,model_name)
+            if(os.path.exists(destination_dir)):
+                shutil.rmtree(destination_dir)
             shutil.move(source_dir, destination_dir)
             print(f"Failed task is removed to moved dir")
             sys.exit(1)

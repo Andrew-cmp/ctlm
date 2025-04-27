@@ -10,7 +10,7 @@ TARGET="$1"
 
 # 1. 拿到所有 GPU 的名称（不带表头）
 GPU_NAMES=$(nvidia-smi --query-gpu=name --format=csv,noheader)
-model="${TARGET#*-}" 
+model="${TARGET##*-}" 
 # 2. 判断 TARGET 是否为任意一行 GPU 名称的子串
 if echo "$GPU_NAMES" | grep -Fqi "$model"; then
   echo "✅ 目标 '$model' 在以下 GPU 名称中找到："

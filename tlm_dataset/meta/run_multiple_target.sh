@@ -7,7 +7,7 @@ if [ $# -ne 1 ]; then
 fi
 
 TARGET="$1"
-model="${TARGET#*-}" 
+model="${TARGET##*-}" 
 
 
 # 3. 如果匹配，通过 run.py 传给 --target
